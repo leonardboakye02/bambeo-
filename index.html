@@ -939,35 +939,35 @@
 
       const mesh = new THREE.Mesh(geo, mat);
       mesh.castShadow = true;
+      // Lay text flat — extruded upward like on a 3D print bed
+      mesh.rotation.x = -Math.PI / 2;
       group.add(mesh);
 
-      // Flat base under the letters
+      // Print bed / base plate under the letters
       const bb = geo.boundingBox;
       const tw = bb.max.x - bb.min.x;
       const th = bb.max.y - bb.min.y;
-      const baseW = tw + 1.2;
-      const baseD = depth + 0.6;
-      const baseH = 0.3 * s;
+      const baseW = tw + 2.0;
+      const baseD = th + 1.5;
+      const baseH = 0.12;
       const baseGeo = new THREE.BoxGeometry(baseW, baseH, baseD);
       const baseMat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(color).multiplyScalar(0.65),
-        roughness: 0.6,
+        color: 0x222222,
+        roughness: 0.9,
         metalness: 0.0
       });
       const base = new THREE.Mesh(baseGeo, baseMat);
-      base.position.y = bb.min.y - baseH / 2;
-      base.castShadow = true;
+      base.position.y = -0.06;
       base.receiveShadow = true;
       group.add(base);
 
       currentGroup = group;
       scene.add(group);
 
-      // 3/4 elevated view — like looking at a sign on a desk
+      // Top-down angled view — like looking at print bed in a slicer
       const fitW = Math.max(tw + 2, 6);
-      const camDist = fitW * 1.4;
-      camera.position.set(camDist * 0.6, camDist * 0.35, camDist * 0.8);
-      controls.target.set(0, th * 0.15, 0);
+      camera.position.set(fitW * 0.15, fitW * 1.1, fitW * 0.5);
+      controls.target.set(0, 0, 0);
       controls.update();
     }
 
