@@ -66,7 +66,6 @@
     .mode-toggle{display:flex;gap:8px;margin-bottom:16px}
     .mode-btn{flex:1;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-size:13px;font-family:inherit;cursor:pointer;transition:all 0.2s}
     .mode-btn.active{background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)}
-    .canvas-actions{display:flex;gap:8px;margin-top:12px}
     .canvas-actions button{flex:1}
     .design-canvas-wrap{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:8px;position:relative}
     .design-canvas{background:#111;border-radius:12px;width:100%;aspect-ratio:16/10;cursor:crosshair;display:none;touch-action:none}
@@ -231,11 +230,6 @@
       <h2 class="section-title">CREATE YOUR <span class="accent">PIECE</span></h2>
       <div class="design-grid">
         <div class="design-controls">
-          <div class="mode-toggle">
-            <button class="mode-btn active" id="modeText" onclick="setMode('text')">Text</button>
-            <button class="mode-btn" id="modeUpload" onclick="setMode('upload')">Upload</button>
-          </div>
-          
           <div id="textControls">
             <div class="control-card">
               <label class="control-label">Your Text</label>
@@ -244,19 +238,6 @@
             <div class="control-card">
               <label class="control-label">Size: <span id="sizeValue">60</span></label>
               <input type="range" min="30" max="100" value="60" style="width:100%" id="sizeSlider" oninput="updateSize(this.value)">
-            </div>
-          </div>
-          
-          <div id="uploadControls" style="display:none">
-            <div class="control-card">
-              <label class="control-label">Upload Your Design</label>
-              <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Upload a logo, sketch, or reference image</p>
-              <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
-              <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('imageUpload').click()">Choose Image</button>
-              <p id="uploadFileName" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center"></p>
-              <div class="canvas-actions" style="margin-top:12px">
-                <button class="btn btn-outline btn-sm" onclick="clearUpload()">Clear</button>
-              </div>
             </div>
           </div>
           
@@ -422,10 +403,9 @@
     }
     var currentColor = '#ff66b2';
     var currentSize = 60;
-    var currentMode = 'text';
+    var currentMode = 'text'; // text only now
     var canvas, ctx;
     var includeDesign = false;
-    var uploadedImage = null;
 
     document.addEventListener('DOMContentLoaded', function() {
       canvas = document.getElementById('designCanvas');
@@ -529,15 +509,6 @@
       updateEstimate();
     }
 
-    function setMode(mode) {
-      currentMode = mode;
-      document.getElementById('modeText').className = 'mode-btn' + (mode === 'text' ? ' active' : '');
-      document.getElementById('modeUpload').className = 'mode-btn' + (mode === 'upload' ? ' active' : '');
-      document.getElementById('textControls').style.display = mode === 'text' ? 'block' : 'none';
-      document.getElementById('uploadControls').style.display = mode === 'upload' ? 'block' : 'none';
-      updateCanvas();
-      if (window.update3DPreview) window.update3DPreview();
-    }
 
     function setColor(color, btn) {
       currentColor = color;
@@ -578,18 +549,8 @@
         ctx.stroke();
       }
       
-      // Uploaded image - only show in upload mode
-      if (currentMode === 'upload' && uploadedImage) {
-        var scale = Math.min(canvas.width / uploadedImage.width, canvas.height / uploadedImage.height) * 0.9;
-        var w = uploadedImage.width * scale;
-        var h = uploadedImage.height * scale;
-        var imgX = (canvas.width - w) / 2;
-        var imgY = (canvas.height - h) / 2;
-        ctx.drawImage(uploadedImage, imgX, imgY, w, h);
-      }
-      
-      // Text - only show in text mode
-      if (currentMode === 'text') {
+      // Text preview
+      {
         var text = document.getElementById('designText').value || 'Bambeo';
         ctx.font = 'bold ' + currentSize + 'px Syne, sans-serif';
         ctx.fillStyle = currentColor;
@@ -599,30 +560,6 @@
       }
     }
 
-    function handleImageUpload(e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function(event) {
-        var img = new Image();
-        img.onload = function() {
-          uploadedImage = img;
-          document.getElementById('uploadFileName').textContent = file.name;
-          updateCanvas();
-          if (window.update3DPreview) window.update3DPreview();
-        };
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function clearUpload() {
-      uploadedImage = null;
-      document.getElementById('imageUpload').value = '';
-      document.getElementById('uploadFileName').textContent = '';
-      updateCanvas();
-      if (window.update3DPreview) window.update3DPreview();
-    }
 
     function updateEstimate() {
       var textEl = document.getElementById('designText');
@@ -1015,60 +952,11 @@
       controls.update();
     }
 
-    function createImagePlaque(img, color) {
-      clearScene();
-
-      const group = new THREE.Group();
-      const texture = new THREE.Texture(img);
-      texture.needsUpdate = true;
-      texture.colorSpace = THREE.SRGBColorSpace;
-
-      const aspect = img.width / img.height;
-      const pw = Math.min(5 * aspect, 8);
-      const ph = pw / aspect;
-      const depth = 0.4;
-
-      // Main body — rounded look
-      const bodyGeo = new THREE.BoxGeometry(pw + 0.3, ph + 0.3, depth);
-      const bodyMat = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(color),
-        roughness: 0.3,
-        metalness: 0.02,
-        clearcoat: 0.2
-      });
-      const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.castShadow = true;
-      group.add(body);
-
-      // Front face image
-      const frontGeo = new THREE.PlaneGeometry(pw, ph);
-      const frontMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5 });
-      const front = new THREE.Mesh(frontGeo, frontMat);
-      front.position.z = depth / 2 + 0.005;
-      group.add(front);
-
-      group.rotation.x = -0.05;
-      currentGroup = group;
-      scene.add(group);
-
-      camera.position.set(0, 1, Math.max(pw * 2, 8));
-      controls.target.set(0, 0, 0);
-      controls.update();
-    }
-
     function update3D() {
-      const mode = window.currentMode || 'text';
       const color = window.currentColor || '#ff66b2';
       const size = window.currentSize || 60;
-
-      if (mode === 'text') {
-        const el = document.getElementById('designText');
-        createTextMesh((el ? el.value : 'Bambeo') || 'Bambeo', color, size);
-      } else if (mode === 'upload' && window.uploadedImage) {
-        createImagePlaque(window.uploadedImage, color);
-      } else if (mode === 'upload') {
-        clearScene();
-      }
+      const el = document.getElementById('designText');
+      createTextMesh((el ? el.value : 'Bambeo') || 'Bambeo', color, size);
     }
 
     window.update3DPreview = update3D;
