@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmed - Bambeo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--bg:#0a0a0a;--text:#fff;--text-muted:#888;--text-dim:#666;--border:rgba(255,255,255,0.06);--glass:rgba(255,255,255,0.03);--pink:#ff66b2;--green:#66ff99}
+    body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+    .logo{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;position:absolute;top:24px;left:24px;text-decoration:none;color:#fff}
+    .success-icon{width:80px;height:80px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:40px}
+    h1{font-family:'Syne',sans-serif;font-size:clamp(32px,6vw,48px);font-weight:800;margin-bottom:16px}
+    h1 .accent{color:var(--green)}
+    p{color:var(--text-muted);font-size:18px;max-width:500px;margin-bottom:32px}
+    .order-box{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;max-width:400px;width:100%}
+    .order-box h3{font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+    .order-box p{font-size:14px;margin-bottom:0;color:var(--text)}
+    .btn{display:inline-block;padding:14px 32px;border-radius:50px;font-weight:600;font-size:14px;cursor:pointer;transition:all 0.2s;border:none;text-align:center;font-family:inherit;text-decoration:none}
+    .btn-primary{background:var(--text);color:var(--bg)}
+    .btn-primary:hover{background:#e0e0e0}
+    .btn-outline{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.2)}
+    .btn-outline:hover{border-color:rgba(255,255,255,0.4)}
+    .buttons{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  </style>
+</head>
+<body>
+  <a href="index.html" class="logo">BAMBEO</a>
+
+  <div class="success-icon">&#10003;</div>
+  <h1>ORDER <span class="accent">CONFIRMED!</span></h1>
+  <p>Thank you for your purchase! We've received your order and will start crafting your custom piece right away.</p>
+
+  <div class="order-box">
+    <h3>What's Next?</h3>
+    <p>You'll receive an email confirmation shortly with your order details. We'll send another email when your order ships.</p>
+  </div>
+
+  <div class="order-box">
+    <h3>Estimated Timeline</h3>
+    <p>Custom pieces typically take 5-7 business days to create, plus 3-5 days for shipping.</p>
+  </div>
+
+  <div class="buttons">
+    <a href="index.html" class="btn btn-primary">Continue Shopping</a>
+    <a href="index.html#contact" class="btn btn-outline">Contact Us</a>
+  </div>
+
+  <script>
+    var urlParams = new URLSearchParams(window.location.search);
+    var sessionId = urlParams.get('session_id');
+    if (sessionId) {
+      console.log('Order session:', sessionId);
+    }
+    localStorage.removeItem('bambeo_cart');
+  </script>
+</body>
+</html>

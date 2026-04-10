@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Cancelled - Bambeo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--bg:#0a0a0a;--text:#fff;--text-muted:#888;--text-dim:#666;--border:rgba(255,255,255,0.06);--glass:rgba(255,255,255,0.03);--pink:#ff66b2;--orange:#ff9966}
+    body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+    .logo{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;position:absolute;top:24px;left:24px;text-decoration:none;color:#fff}
+    .cancel-icon{width:80px;height:80px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:40px}
+    h1{font-family:'Syne',sans-serif;font-size:clamp(32px,6vw,48px);font-weight:800;margin-bottom:16px}
+    h1 .accent{color:var(--orange)}
+    p{color:var(--text-muted);font-size:18px;max-width:500px;margin-bottom:32px}
+    .info-box{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;max-width:400px;width:100%}
+    .info-box p{font-size:14px;margin-bottom:0;color:var(--text)}
+    .btn{display:inline-block;padding:14px 32px;border-radius:50px;font-weight:600;font-size:14px;cursor:pointer;transition:all 0.2s;border:none;text-align:center;font-family:inherit;text-decoration:none}
+    .btn-primary{background:var(--text);color:var(--bg)}
+    .btn-primary:hover{background:#e0e0e0}
+    .btn-outline{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.2)}
+    .btn-outline:hover{border-color:rgba(255,255,255,0.4)}
+    .buttons{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  </style>
+</head>
+<body>
+  <a href="index.html" class="logo">BAMBEO</a>
+
+  <div class="cancel-icon">&#10005;</div>
+  <h1>ORDER <span class="accent">CANCELLED</span></h1>
+  <p>No worries! Your payment was cancelled and you haven't been charged. Your cart items are still saved.</p>
+
+  <div class="info-box">
+    <p>Changed your mind? No problem. You can return to your cart anytime to complete your purchase, or browse more of our collection.</p>
+  </div>
+
+  <div class="buttons">
+    <a href="index.html#products" class="btn btn-primary">Continue Shopping</a>
+    <a href="index.html#contact" class="btn btn-outline">Need Help?</a>
+  </div>
+</body>
+</html>

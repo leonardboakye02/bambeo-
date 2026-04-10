@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bambeo - Custom Signs & Pieces</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--bg:#0a0a0a;--text:#fff;--text-muted:#888;--text-dim:#666;--border:rgba(255,255,255,0.06);--glass:rgba(255,255,255,0.03);--pink:#ff66b2;--blue:#66d9ff;--purple:#b366ff;--green:#66ff99;--orange:#ff9966;--red:#ff6680}
+    body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+    a{color:inherit;text-decoration:none}
+    .container{max-width:1200px;margin:0 auto;padding:0 24px}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:16px 24px}
+    .nav-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+    .logo{font-family:'Syne',sans-serif;font-size:24px;font-weight:800}
+    .nav-links{display:flex;gap:32px;align-items:center}
+    .nav-links a{font-size:14px;color:var(--text-muted);transition:color 0.2s}
+    .nav-links a:hover{color:var(--text)}
+    .btn{display:inline-block;padding:12px 28px;border-radius:50px;font-weight:600;font-size:14px;cursor:pointer;transition:all 0.2s;border:none;text-align:center;font-family:inherit}
+    .btn-primary{background:var(--text);color:var(--bg)}
+    .btn-primary:hover{background:#e0e0e0}
+    .btn-outline{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.2)}
+    .btn-outline:hover{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.05)}
+    .btn-sm{padding:8px 16px;font-size:12px}
+    .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:140px 24px 100px;background:radial-gradient(ellipse at 30% 20%,rgba(100,50,150,0.08) 0%,transparent 50%),radial-gradient(ellipse at 70% 80%,rgba(50,100,150,0.06) 0%,transparent 50%)}
+    .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--glass);border:1px solid var(--border);border-radius:50px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:32px}
+    .badge-dot{width:6px;height:6px;background:#4ade80;border-radius:50%}
+    .hero h1{font-family:'Syne',sans-serif;font-size:clamp(48px,10vw,96px);font-weight:800;line-height:1;margin-bottom:24px}
+    .hero h1 .accent{color:var(--pink)}
+    .hero p{font-size:18px;color:var(--text-dim);max-width:480px;margin-bottom:40px}
+    .hero-buttons{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+    .stats{display:flex;gap:48px;margin-top:80px}
+    .stat{text-align:center}
+    .stat-value{font-family:'Syne',sans-serif;font-size:24px;font-weight:700}
+    .stat-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+    section{padding:100px 24px}
+    .section-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+    .section-title{font-family:'Syne',sans-serif;font-size:clamp(32px,5vw,48px);font-weight:800;margin-bottom:48px}
+    .section-title .accent{color:var(--blue)}
+    .products-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:48px;flex-wrap:wrap;gap:24px}
+    .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+    .product-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:all 0.3s}
+    .product-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,0.12)}
+    .product-image{aspect-ratio:1;background:#111;display:flex;align-items:center;justify-content:center;padding:24px;position:relative}
+    .product-image span{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;text-align:center}
+    .product-tag{position:absolute;top:12px;left:12px;padding:4px 10px;border-radius:50px;font-size:10px;font-weight:700;text-transform:uppercase}
+    .product-tag.best{background:#fbbf24;color:#000}
+    .product-tag.new{background:#4ade80;color:#000}
+    .product-info{padding:16px}
+    .product-name{font-size:14px;color:#ccc;margin-bottom:8px}
+    .product-price{display:flex;justify-content:space-between;align-items:center}
+    .product-price strong{font-family:'Syne',sans-serif;font-size:18px}
+    .product-price span{font-size:10px;color:var(--text-dim);text-transform:uppercase}
+    .design-section{text-align:center}
+    .design-grid{display:grid;grid-template-columns:300px 1fr;gap:32px;text-align:left;max-width:1100px;margin:0 auto}
+    .design-controls{display:flex;flex-direction:column;gap:16px}
+    .control-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:20px}
+    .control-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:block}
+    .control-input{width:100%;padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:#fff;font-size:14px;font-family:inherit;outline:none}
+    .control-input:focus{border-color:rgba(255,255,255,0.2)}
+    .color-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .color-btn{aspect-ratio:1;border:2px solid transparent;border-radius:8px;cursor:pointer;transition:transform 0.2s}
+    .color-btn:hover{transform:scale(1.05)}
+    .color-btn.active{border-color:#fff}
+    .mode-toggle{display:flex;gap:8px;margin-bottom:16px}
+    .mode-btn{flex:1;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-size:13px;font-family:inherit;cursor:pointer;transition:all 0.2s}
+    .mode-btn.active{background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)}
+    .brush-sizes{display:flex;gap:8px;margin-top:12px}
+    .brush-btn{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .brush-btn.active{border-color:#fff;background:rgba(255,255,255,0.1)}
+    .brush-btn span{background:#fff;border-radius:50%}
+    .canvas-actions{display:flex;gap:8px;margin-top:12px}
+    .canvas-actions button{flex:1}
+    .design-canvas-wrap{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:8px}
+    .design-canvas{background:#111;border-radius:12px;width:100%;aspect-ratio:16/10;cursor:crosshair;display:block;touch-action:none}
+    .design-estimate{display:flex;justify-content:space-between;margin-top:16px;padding:16px;background:var(--glass);border:1px solid var(--border);border-radius:12px}
+    .estimate-label{font-size:11px;color:var(--text-dim);text-transform:uppercase}
+    .estimate-value{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-top:4px}
+    .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+    .about-text p{color:var(--text-muted);margin-bottom:16px}
+    .about-features{display:flex;gap:24px;flex-wrap:wrap;margin-top:32px}
+    .about-feature{display:flex;align-items:center;gap:8px;font-size:14px}
+    .about-feature .check{color:#4ade80}
+    .service-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .service-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:24px;transition:background 0.2s}
+    .service-card:hover{background:rgba(255,255,255,0.05)}
+    .service-icon{font-size:32px;margin-bottom:12px}
+    .service-title{font-weight:700;margin-bottom:4px}
+    .service-desc{font-size:12px;color:var(--text-dim)}
+    .gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .gallery-item{aspect-ratio:1;background:#111;border:1px solid var(--border);border-radius:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.3s}
+    .gallery-item:hover{transform:scale(1.02)}
+    .gallery-item span{font-family:'Syne',sans-serif;font-size:32px;font-weight:700}
+    .process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;text-align:center}
+    .process-step{display:flex;flex-direction:column;align-items:center}
+    .process-num{width:64px;height:64px;background:var(--glass);border:1px solid var(--border);border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:16px}
+    .process-title{font-weight:700;margin-bottom:8px}
+    .process-desc{font-size:14px;color:var(--text-dim)}
+    .reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .review-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:24px}
+    .review-stars{color:#fbbf24;margin-bottom:16px}
+    .review-text{color:#ccc;font-size:14px;line-height:1.6;margin-bottom:16px}
+    .review-author{font-weight:600;font-size:14px}
+    .faq-list{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+    .faq-item{background:var(--glass);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .faq-question{width:100%;padding:16px 20px;background:transparent;border:none;color:#fff;text-align:left;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+    .faq-question .icon{transition:transform 0.2s}
+    .faq-item.open .faq-question .icon{transform:rotate(180deg)}
+    .faq-answer{padding:0 20px 16px;color:var(--text-muted);font-size:14px;display:none}
+    .faq-item.open .faq-answer{display:block}
+    .contact-section{text-align:center}
+    .contact-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:40px}
+    .footer{padding:48px 24px;border-top:1px solid var(--border)}
+    .footer-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px}
+    .footer-links{display:flex;gap:24px}
+    .footer-links a{font-size:14px;color:var(--text-dim);transition:color 0.2s}
+    .footer-links a:hover{color:var(--text)}
+    .footer-copy{font-size:12px;color:#444}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:200;padding:24px}
+    .modal-overlay.open{display:flex}
+    .modal{background:#111;border:1px solid var(--border);border-radius:20px;padding:32px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;position:relative}
+    .modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;background:rgba(255,255,255,0.1);border:none;border-radius:50%;color:#fff;cursor:pointer;font-size:16px}
+    .modal h3{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:4px}
+    .modal p{color:var(--text-dim);font-size:14px;margin-bottom:24px}
+    .modal-form{display:flex;flex-direction:column;gap:12px}
+    .modal-form input,.modal-form select,.modal-form textarea{width:100%;padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:#fff;font-size:14px;font-family:inherit;outline:none}
+    .modal-form textarea{resize:none;min-height:80px}
+    .modal-form select{cursor:pointer}
+    .modal-form select option{background:#111}
+    .design-preview{margin-bottom:20px;padding:12px;background:rgba(255,255,255,0.03);border-radius:12px}
+    .design-preview img{width:100%;border-radius:8px}
+    .design-preview p{text-align:center;font-size:12px;color:var(--text-dim);margin-top:8px}
+    /* CART */
+    .cart-btn{position:relative;background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:4px 8px;transition:color 0.2s}
+    .cart-btn:hover{color:var(--text)}
+    .cart-count{position:absolute;top:-4px;right:-4px;background:var(--pink);color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;display:none}
+    .cart-count.show{display:flex}
+    .cart-drawer{position:fixed;top:0;right:-420px;width:400px;max-width:90vw;height:100vh;background:#111;border-left:1px solid var(--border);z-index:200;transition:right 0.3s;display:flex;flex-direction:column}
+    .cart-drawer.open{right:0}
+    .cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:199;display:none}
+    .cart-overlay.open{display:block}
+    .cart-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--border)}
+    .cart-header h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
+    .cart-close{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer}
+    .cart-items{flex:1;overflow-y:auto;padding:16px 24px}
+    .cart-item{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);align-items:center}
+    .cart-item-color{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;flex-shrink:0}
+    .cart-item-info{flex:1}
+    .cart-item-name{font-size:14px;font-weight:600;margin-bottom:2px}
+    .cart-item-price{font-size:13px;color:var(--text-muted)}
+    .cart-item-qty{display:flex;align-items:center;gap:8px}
+    .cart-item-qty button{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;color:#fff;cursor:pointer;font-size:14px}
+    .cart-item-qty span{font-size:14px;min-width:20px;text-align:center}
+    .cart-item-remove{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;padding:4px}
+    .cart-item-remove:hover{color:var(--red)}
+    .cart-footer{padding:20px 24px;border-top:1px solid var(--border)}
+    .cart-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .cart-total span{font-size:14px;color:var(--text-muted)}
+    .cart-total strong{font-family:'Syne',sans-serif;font-size:20px}
+    .cart-empty{text-align:center;padding:48px 0;color:var(--text-dim);font-size:14px}
+    .add-to-cart-btn{position:absolute;bottom:12px;right:12px;padding:6px 14px;background:rgba(255,255,255,0.9);color:#000;border:none;border-radius:50px;font-size:11px;font-weight:600;cursor:pointer;opacity:0;transition:opacity 0.2s;font-family:inherit}
+    .product-card:hover .add-to-cart-btn{opacity:1}
+    @media(max-width:768px){.nav-links{display:none}.about-grid,.design-grid{grid-template-columns:1fr}.gallery-grid,.reviews-grid{grid-template-columns:1fr}.process-grid{grid-template-columns:repeat(2,1fr)}.stats{gap:32px}.service-grid{grid-template-columns:1fr}.cart-drawer{width:100%;max-width:100%;right:-100%}}
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="logo">BAMBEO</a>
+      <div class="nav-links">
+        <a href="#products">Shop</a>
+        <a href="#designer">Design</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+        <button class="btn btn-primary" onclick="openModal()">Get Quote</button>
+        <button class="cart-btn" onclick="toggleCart()">&#128722;<span class="cart-count" id="cartCount">0</span></button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-header">
+      <h3>Your Cart</h3>
+      <button class="cart-close" onclick="toggleCart()">&times;</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+      <div class="cart-empty">Your cart is empty</div>
+    </div>
+    <div class="cart-footer" id="cartFooter" style="display:none">
+      <div class="cart-total">
+        <span>Total</span>
+        <strong id="cartTotal">$0</strong>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:14px" onclick="checkout()">Checkout</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="badge"><span class="badge-dot"></span>Made to Order</div>
+    <h1>SIGNS &<br><span class="accent">CUSTOM</span> PIECES</h1>
+    <p id="heroSubtitle">Elevate your space with premium custom signs and unique pieces. Designed for you, crafted with precision.</p>
+    <div class="hero-buttons">
+      <a href="#products" class="btn btn-primary">View Collection</a>
+      <a href="#designer" class="btn btn-outline">Design Your Own</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-value">500+</div><div class="stat-label">Pieces Made</div></div>
+      <div class="stat"><div class="stat-value">4.9★</div><div class="stat-label">Rating</div></div>
+      <div class="stat"><div class="stat-value">Free</div><div class="stat-label">Shipping</div></div>
+    </div>
+  </section>
+  
+  <section id="products">
+    <div class="container">
+      <div class="products-header">
+        <div>
+          <div class="section-label">Collection</div>
+          <h2 class="section-title" style="margin-bottom:0">FEATURED PIECES</h2>
+        </div>
+      </div>
+      <div class="products-grid" id="productsGrid"></div>
+    </div>
+  </section>
+  
+  <section id="designer" class="design-section">
+    <div class="container">
+      <div class="section-label">Design Tool</div>
+      <h2 class="section-title">CREATE YOUR <span class="accent">PIECE</span></h2>
+      <div class="design-grid">
+        <div class="design-controls">
+          <div class="mode-toggle">
+            <button class="mode-btn active" id="modeText" onclick="setMode('text')">Text</button>
+            <button class="mode-btn" id="modeDraw" onclick="setMode('draw')">Draw</button>
+            <button class="mode-btn" id="modeUpload" onclick="setMode('upload')">Upload</button>
+          </div>
+          
+          <div id="textControls">
+            <div class="control-card">
+              <label class="control-label">Your Text</label>
+              <input type="text" class="control-input" id="designText" value="Bambeo" oninput="updateCanvas()">
+            </div>
+            <div class="control-card">
+              <label class="control-label">Size: <span id="sizeValue">60</span></label>
+              <input type="range" min="30" max="100" value="60" style="width:100%" id="sizeSlider" oninput="updateSize(this.value)">
+            </div>
+          </div>
+          
+          <div id="drawControls" style="display:none">
+            <div class="control-card">
+              <label class="control-label">Brush Size</label>
+              <div class="brush-sizes">
+                <button class="brush-btn" onclick="setBrush(4,this)"><span style="width:4px;height:4px"></span></button>
+                <button class="brush-btn active" onclick="setBrush(8,this)"><span style="width:8px;height:8px"></span></button>
+                <button class="brush-btn" onclick="setBrush(12,this)"><span style="width:12px;height:12px"></span></button>
+                <button class="brush-btn" onclick="setBrush(20,this)"><span style="width:20px;height:20px"></span></button>
+              </div>
+              <div class="canvas-actions">
+                <button class="btn btn-outline btn-sm" onclick="undoStroke()">Undo</button>
+                <button class="btn btn-outline btn-sm" onclick="clearCanvas()">Clear</button>
+              </div>
+            </div>
+          </div>
+          
+          <div id="uploadControls" style="display:none">
+            <div class="control-card">
+              <label class="control-label">Upload Your Design</label>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Upload a logo, sketch, or reference image</p>
+              <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
+              <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('imageUpload').click()">Choose Image</button>
+              <p id="uploadFileName" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center"></p>
+              <div class="canvas-actions" style="margin-top:12px">
+                <button class="btn btn-outline btn-sm" onclick="clearUpload()">Clear</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="control-card">
+            <label class="control-label">Color</label>
+            <div class="color-grid">
+              <button class="color-btn active" style="background:var(--pink)" onclick="setColor('#ff66b2',this)"></button>
+              <button class="color-btn" style="background:var(--blue)" onclick="setColor('#66d9ff',this)"></button>
+              <button class="color-btn" style="background:var(--purple)" onclick="setColor('#b366ff',this)"></button>
+              <button class="color-btn" style="background:var(--green)" onclick="setColor('#66ff99',this)"></button>
+              <button class="color-btn" style="background:var(--orange)" onclick="setColor('#ff9966',this)"></button>
+              <button class="color-btn" style="background:var(--red)" onclick="setColor('#ff6680',this)"></button>
+              <button class="color-btn" style="background:#fff" onclick="setColor('#ffffff',this)"></button>
+              <button class="color-btn" style="background:#fff5e6" onclick="setColor('#fff5e6',this)"></button>
+            </div>
+          </div>
+          
+          <button class="btn btn-primary" style="width:100%;padding:16px" onclick="openQuoteWithDesign()">Get Quote</button>
+        </div>
+        
+        <div>
+          <div class="design-canvas-wrap">
+            <canvas id="designCanvas" class="design-canvas" width="800" height="500"></canvas>
+          </div>
+          <div class="design-estimate">
+            <div><div class="estimate-label">Est. Size</div><div class="estimate-value" id="estSize">18" x 8"</div></div>
+            <div style="text-align:right"><div class="estimate-label">From</div><div class="estimate-value" id="estPrice" style="color:var(--pink)">$115</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="about">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-text">
+          <div class="section-label">About Us</div>
+          <h2 class="section-title">CRAFTED WITH <span class="accent">PRECISION</span></h2>
+          <p id="aboutText1">We create custom signs and unique pieces designed to transform any space. Each piece is made to order with attention to detail and quality.</p>
+          <p id="aboutText2">From illuminated signs to decorative pieces, we bring your vision to life. Whether for your home, business, or event - we've got you covered.</p>
+          <div class="about-features">
+            <div class="about-feature"><span class="check">✓</span> Made to Order</div>
+            <div class="about-feature"><span class="check">✓</span> Free Shipping</div>
+            <div class="about-feature"><span class="check">✓</span> Quality Guaranteed</div>
+          </div>
+        </div>
+        <div class="service-grid">
+          <div class="service-card"><div class="service-icon">💡</div><div class="service-title">LED Signs</div><div class="service-desc">Vibrant illumination</div></div>
+          <div class="service-card"><div class="service-icon">🎨</div><div class="service-title">Custom Pieces</div><div class="service-desc">Unique designs</div></div>
+          <div class="service-card"><div class="service-icon">🏠</div><div class="service-title">Home Decor</div><div class="service-desc">Stylish accents</div></div>
+          <div class="service-card"><div class="service-icon">🏢</div><div class="service-title">Business</div><div class="service-desc">Professional signage</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section id="gallery">
+    <div class="container" style="text-align:center">
+      <div class="section-label">Portfolio</div>
+      <h2 class="section-title">OUR WORK</h2>
+      <div class="gallery-grid" id="galleryGrid"></div>
+    </div>
+  </section>
+  
+  <section style="text-align:center">
+    <div class="container">
+      <h2 class="section-title">HOW IT WORKS</h2>
+      <div class="process-grid">
+        <div class="process-step"><div class="process-num">01</div><div class="process-title">Design</div><div class="process-desc">Share your idea</div></div>
+        <div class="process-step"><div class="process-num">02</div><div class="process-title">Review</div><div class="process-desc">Approve the proof</div></div>
+        <div class="process-step"><div class="process-num">03</div><div class="process-title">Create</div><div class="process-desc">We craft it</div></div>
+        <div class="process-step"><div class="process-num">04</div><div class="process-title">Ship</div><div class="process-desc">Free delivery</div></div>
+      </div>
+    </div>
+  </section>
+  
+  <section style="text-align:center">
+    <div class="container">
+      <h2 class="section-title">REVIEWS</h2>
+      <div class="reviews-grid" id="testimonialsGrid"></div>
+    </div>
+  </section>
+  
+  <section id="faq" style="text-align:center">
+    <div class="container">
+      <h2 class="section-title">FAQ</h2>
+      <div class="faq-list" id="faqList"></div>
+    </div>
+  </section>
+  
+  <section id="contact" class="contact-section">
+    <div class="container">
+      <h2 class="section-title">LET'S <span class="accent">CREATE</span></h2>
+      <p style="color:var(--text-dim);font-size:18px">Have a project in mind? Get in touch.</p>
+      <div class="contact-buttons">
+        <button class="btn btn-primary" onclick="openModal()">Get a Quote</button>
+        <a href="mailto:hello@bambeo.com" class="btn btn-outline" id="contactEmail">hello@bambeo.com</a>
+      </div>
+    </div>
+  </section>
+  
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="logo">BAMBEO</span>
+      <div class="footer-links">
+        <a href="#products">Shop</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="footer-copy">© 2024 Bambeo. All rights reserved.</div>
+    </div>
+  </footer>
+  
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <h3>GET A QUOTE</h3>
+      <p>Tell us about your project</p>
+      <div class="design-preview" id="designPreview" style="display:none">
+        <img id="previewImage" src="" alt="Your Design">
+        <p>Your custom design</p>
+      </div>
+      <form class="modal-form" onsubmit="submitQuote(event)">
+        <input type="text" id="quoteName" placeholder="Name *" required>
+        <input type="email" id="quoteEmail" placeholder="Email *" required>
+        <input type="tel" id="quotePhone" placeholder="Phone">
+        <select id="quoteType">
+          <option value="">Project Type</option>
+          <option value="sign">Sign</option>
+          <option value="custom">Custom Piece</option>
+          <option value="decor">Decor</option>
+          <option value="other">Other</option>
+        </select>
+        <textarea id="quoteMessage" placeholder="Tell us more..."></textarea>
+        <button type="submit" class="btn btn-primary" style="width:100%">Submit Quote</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    var SUPABASE_URL = 'https://mlqcjkyupgayhbbdlttr.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1scWNqa3l1cGdheWhiYmRsdHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjUzMDIsImV4cCI6MjA5MTI0MTMwMn0.LI3Lk7b1RgntGIEI0doBpZqcRuayN6Gti4ygFFfJ1vY';
+    
+    var BASE_PRICE = 79;
+    var PRICE_PER_CHAR = 6;
+    var PRICE_PER_SIZE = 0.3;
+
+    // XSS sanitization - escape HTML entities
+    function esc(str) {
+      if (!str) return '';
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+    // Sanitize CSS color values (only allow hex colors)
+    function escColor(c) {
+      if (!c) return '#fff';
+      return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : '#fff';
+    }
+    var currentColor = '#ff66b2';
+    var currentSize = 60;
+    var currentMode = 'text';
+    var brushSize = 8;
+    var isDrawing = false;
+    var strokes = [];
+    var currentStroke = [];
+    var canvas, ctx;
+    var includeDesign = false;
+    var uploadedImage = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      canvas = document.getElementById('designCanvas');
+      ctx = canvas.getContext('2d');
+      
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseleave', stopDrawing);
+      canvas.addEventListener('touchstart', handleTouch, {passive: false});
+      canvas.addEventListener('touchmove', handleTouch, {passive: false});
+      canvas.addEventListener('touchend', stopDrawing);
+      
+      document.getElementById('modal').addEventListener('click', function(e) {
+        if (e.target.id === 'modal') closeModal();
+      });
+      
+      updateCanvas();
+      loadSiteData();
+    });
+
+    function fetchFromSupabase(table) {
+      return fetch(SUPABASE_URL + '/rest/v1/' + table + '?select=*', {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+      }).then(function(res) { return res.json(); }).catch(function(e) { console.error('Supabase error:', e); return null; });
+    }
+    
+    function saveToSupabase(table, data) {
+      return fetch(SUPABASE_URL + '/rest/v1/' + table, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+        body: JSON.stringify(data)
+      }).then(function(res) { return res.json(); }).catch(function(e) { console.error('Save error:', e); return null; });
+    }
+
+    function loadSiteData() {
+      Promise.all([
+        fetchFromSupabase('products'),
+        fetchFromSupabase('gallery'),
+        fetchFromSupabase('testimonials'),
+        fetchFromSupabase('faqs'),
+        fetchFromSupabase('site_settings')
+      ]).then(function(results) {
+        if (results[0]) renderProducts(results[0]);
+        if (results[1]) renderGallery(results[1]);
+        if (results[2]) renderTestimonials(results[2]);
+        if (results[3]) renderFaqs(results[3]);
+        if (results[4]) applySettings(results[4]);
+      }).catch(function(e) { console.error('Error:', e); });
+    }
+
+    var allProducts = [];
+
+    function renderProducts(products) {
+      var grid = document.getElementById('productsGrid');
+      if (!grid || !products || !products.length) return;
+      var active = products.filter(function(p) { return p.is_active !== false; }).sort(function(a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
+      allProducts = active;
+      grid.innerHTML = active.map(function(p) {
+        var safeId = esc(p.id);
+        var safeTag = (p.tag === 'best' || p.tag === 'new') ? p.tag : '';
+        return '<div class="product-card"><div class="product-image">' + (safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '') + '<span style="color:' + escColor(p.color) + '">' + esc(p.display_text || p.name) + '</span><button class="add-to-cart-btn" onclick="event.stopPropagation();addToCart(\'' + safeId + '\')">Add to Cart</button></div><div class="product-info"><div class="product-name">' + esc(p.name) + '</div><div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div></div></div>';
+      }).join('');
+    }
+
+    function renderGallery(gallery) {
+      var grid = document.getElementById('galleryGrid');
+      if (!grid || !gallery || !gallery.length) return;
+      var active = gallery.filter(function(g) { return g.is_active !== false; }).sort(function(a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
+      grid.innerHTML = active.map(function(g) {
+        return '<div class="gallery-item"><span style="color:' + escColor(g.color) + '">' + esc(g.title) + '</span></div>';
+      }).join('');
+    }
+
+    function renderTestimonials(testimonials) {
+      var grid = document.getElementById('testimonialsGrid');
+      if (!grid || !testimonials || !testimonials.length) return;
+      var active = testimonials.filter(function(t) { return t.is_active !== false; });
+      grid.innerHTML = active.map(function(t) {
+        var stars = '';
+        var rating = Math.min(Math.max(parseInt(t.rating) || 5, 1), 5);
+        for (var i = 0; i < rating; i++) stars += '★';
+        return '<div class="review-card"><div class="review-stars">' + stars + '</div><div class="review-text">"' + esc(t.review_text) + '"</div><div class="review-author">' + esc(t.author_name) + '</div></div>';
+      }).join('');
+    }
+
+    function renderFaqs(faqs) {
+      var list = document.getElementById('faqList');
+      if (!list || !faqs || !faqs.length) return;
+      var active = faqs.filter(function(f) { return f.is_active !== false; }).sort(function(a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
+      list.innerHTML = active.map(function(f, i) {
+        return '<div class="faq-item ' + (i === 0 ? 'open' : '') + '"><button class="faq-question" onclick="toggleFaq(this)">' + esc(f.question) + '<span class="icon">▼</span></button><div class="faq-answer">' + esc(f.answer) + '</div></div>';
+      }).join('');
+    }
+
+    function applySettings(settings) {
+      if (!settings) return;
+      var s = {};
+      settings.forEach(function(item) { s[item.key] = item.value; });
+      if (s.base_price) BASE_PRICE = parseFloat(s.base_price);
+      if (s.price_per_char) PRICE_PER_CHAR = parseFloat(s.price_per_char);
+      if (s.price_per_size) PRICE_PER_SIZE = parseFloat(s.price_per_size);
+      if (s.hero_subtitle) document.getElementById('heroSubtitle').textContent = s.hero_subtitle;
+      if (s.email) {
+        var el = document.getElementById('contactEmail');
+        if (el) { el.href = 'mailto:' + s.email; el.textContent = s.email; }
+      }
+      updateEstimate();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('modeText').className = 'mode-btn' + (mode === 'text' ? ' active' : '');
+      document.getElementById('modeDraw').className = 'mode-btn' + (mode === 'draw' ? ' active' : '');
+      document.getElementById('modeUpload').className = 'mode-btn' + (mode === 'upload' ? ' active' : '');
+      document.getElementById('textControls').style.display = mode === 'text' ? 'block' : 'none';
+      document.getElementById('drawControls').style.display = mode === 'draw' ? 'block' : 'none';
+      document.getElementById('uploadControls').style.display = mode === 'upload' ? 'block' : 'none';
+      updateCanvas();
+    }
+
+    function setColor(color, btn) {
+      currentColor = color;
+      var btns = document.querySelectorAll('.color-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].className = 'color-btn';
+      btn.className = 'color-btn active';
+      document.getElementById('estPrice').style.color = color;
+      updateCanvas();
+    }
+
+    function setBrush(size, btn) {
+      brushSize = size;
+      var btns = document.querySelectorAll('.brush-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].className = 'brush-btn';
+      btn.className = 'brush-btn active';
+    }
+
+    function updateSize(size) {
+      currentSize = parseInt(size);
+      document.getElementById('sizeValue').textContent = size;
+      updateCanvas();
+      updateEstimate();
+    }
+
+    function updateCanvas() {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Grid
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      for (var x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (var y = 0; y < canvas.height; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+      
+      // Uploaded image - only show in upload mode
+      if (currentMode === 'upload' && uploadedImage) {
+        var scale = Math.min(canvas.width / uploadedImage.width, canvas.height / uploadedImage.height) * 0.9;
+        var w = uploadedImage.width * scale;
+        var h = uploadedImage.height * scale;
+        var imgX = (canvas.width - w) / 2;
+        var imgY = (canvas.height - h) / 2;
+        ctx.drawImage(uploadedImage, imgX, imgY, w, h);
+      }
+      
+      // Strokes - only show in draw mode
+      if (currentMode === 'draw') {
+        for (var i = 0; i < strokes.length; i++) {
+          drawStroke(strokes[i]);
+        }
+        if (currentStroke.length > 0) {
+          drawStroke({ points: currentStroke, color: currentColor, size: brushSize });
+        }
+      }
+      
+      // Text - only show in text mode
+      if (currentMode === 'text') {
+        var text = document.getElementById('designText').value || 'Bambeo';
+        ctx.font = 'bold ' + currentSize + 'px Syne, sans-serif';
+        ctx.fillStyle = currentColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      }
+    }
+
+    function drawStroke(stroke) {
+      if (stroke.points.length < 2) return;
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.size;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+      for (var i = 1; i < stroke.points.length; i++) {
+        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+      }
+      ctx.stroke();
+    }
+
+    function getPos(e) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
+
+    function startDrawing(e) {
+      if (currentMode !== 'draw') return;
+      isDrawing = true;
+      currentStroke = [getPos(e)];
+    }
+
+    function draw(e) {
+      if (!isDrawing || currentMode !== 'draw') return;
+      currentStroke.push(getPos(e));
+      updateCanvas();
+    }
+
+    function stopDrawing() {
+      if (isDrawing && currentStroke.length > 0) {
+        strokes.push({ points: currentStroke.slice(), color: currentColor, size: brushSize });
+        currentStroke = [];
+      }
+      isDrawing = false;
+    }
+
+    function handleTouch(e) {
+      e.preventDefault();
+      var touch = e.touches[0];
+      var pos = { clientX: touch.clientX, clientY: touch.clientY };
+      if (e.type === 'touchstart') {
+        startDrawing(pos);
+      } else if (e.type === 'touchmove') {
+        if (isDrawing && currentMode === 'draw') {
+          currentStroke.push(getPos(pos));
+          updateCanvas();
+        }
+      }
+    }
+
+    function undoStroke() {
+      strokes.pop();
+      updateCanvas();
+    }
+
+    function clearCanvas() {
+      strokes = [];
+      currentStroke = [];
+      updateCanvas();
+    }
+
+    function handleImageUpload(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(event) {
+        var img = new Image();
+        img.onload = function() {
+          uploadedImage = img;
+          document.getElementById('uploadFileName').textContent = file.name;
+          updateCanvas();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearUpload() {
+      uploadedImage = null;
+      document.getElementById('imageUpload').value = '';
+      document.getElementById('uploadFileName').textContent = '';
+      updateCanvas();
+    }
+
+    function updateEstimate() {
+      var textEl = document.getElementById('designText');
+      var text = textEl ? textEl.value : 'Bambeo';
+      var width = Math.round(text.length * 2 + currentSize / 4);
+      var height = Math.round(currentSize / 5 + 5);
+      var price = Math.round(BASE_PRICE + text.length * PRICE_PER_CHAR + currentSize * PRICE_PER_SIZE);
+      document.getElementById('estSize').textContent = width + '" x ' + height + '"';
+      document.getElementById('estPrice').textContent = '$' + price;
+    }
+
+    function openModal() {
+      includeDesign = false;
+      document.getElementById('designPreview').style.display = 'none';
+      document.getElementById('modal').className = 'modal-overlay open';
+    }
+
+    function openQuoteWithDesign() {
+      includeDesign = true;
+      document.getElementById('previewImage').src = canvas.toDataURL('image/png');
+      document.getElementById('designPreview').style.display = 'block';
+      document.getElementById('modal').className = 'modal-overlay open';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').className = 'modal-overlay';
+    }
+
+    var lastQuoteSubmit = 0;
+    function submitQuote(e) {
+      e.preventDefault();
+      var now = Date.now();
+      if (now - lastQuoteSubmit < 30000) {
+        alert('Please wait before submitting another quote.');
+        return;
+      }
+      lastQuoteSubmit = now;
+      var data = {
+        name: document.getElementById('quoteName').value,
+        email: document.getElementById('quoteEmail').value,
+        phone: document.getElementById('quotePhone').value || null,
+        project_type: document.getElementById('quoteType').value || null,
+        message: document.getElementById('quoteMessage').value || null,
+        design_text: document.getElementById('designText').value,
+        design_color: currentColor,
+        design_size: currentSize,
+        design_image: includeDesign ? canvas.toDataURL('image/png') : null,
+        status: 'new'
+      };
+      
+      saveToSupabase('quote_requests', data).then(function(result) {
+        if (result && !result.error) {
+          alert("Thank you! We'll be in touch within 24 hours.");
+          closeModal();
+          document.getElementById('quoteName').value = '';
+          document.getElementById('quoteEmail').value = '';
+          document.getElementById('quotePhone').value = '';
+          document.getElementById('quoteType').value = '';
+          document.getElementById('quoteMessage').value = '';
+        } else {
+          alert("Sorry, there was an error. Please try again or email us directly.");
+        }
+      });
+    }
+
+    function toggleFaq(btn) {
+      var item = btn.parentElement;
+      var wasOpen = item.className.indexOf('open') !== -1;
+      var items = document.querySelectorAll('.faq-item');
+      for (var i = 0; i < items.length; i++) items[i].className = 'faq-item';
+      if (!wasOpen) item.className = 'faq-item open';
+    }
+
+    // ==========================================
+    // CART SYSTEM
+    // ==========================================
+    var cart = JSON.parse(localStorage.getItem('bambeo_cart') || '[]');
+
+    function saveCart() {
+      localStorage.setItem('bambeo_cart', JSON.stringify(cart));
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      var countEl = document.getElementById('cartCount');
+      var itemsEl = document.getElementById('cartItems');
+      var footerEl = document.getElementById('cartFooter');
+      var totalEl = document.getElementById('cartTotal');
+
+      var totalQty = 0;
+      var totalPrice = 0;
+      for (var i = 0; i < cart.length; i++) {
+        totalQty += cart[i].quantity;
+        totalPrice += cart[i].price * cart[i].quantity;
+      }
+
+      // Badge
+      countEl.textContent = totalQty;
+      countEl.className = totalQty > 0 ? 'cart-count show' : 'cart-count';
+
+      // Items
+      if (cart.length === 0) {
+        itemsEl.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+        footerEl.style.display = 'none';
+      } else {
+        footerEl.style.display = 'block';
+        totalEl.textContent = '$' + totalPrice.toFixed(0);
+        itemsEl.innerHTML = cart.map(function(item, idx) {
+          return '<div class="cart-item">' +
+            '<div class="cart-item-color" style="background:' + escColor(item.color) + '">' + esc((item.display_text || item.name || '').charAt(0)) + '</div>' +
+            '<div class="cart-item-info"><div class="cart-item-name">' + esc(item.name) + '</div><div class="cart-item-price">$' + esc(String(item.price)) + '</div></div>' +
+            '<div class="cart-item-qty">' +
+              '<button onclick="changeQty(' + idx + ',-1)">-</button>' +
+              '<span>' + item.quantity + '</span>' +
+              '<button onclick="changeQty(' + idx + ',1)">+</button>' +
+            '</div>' +
+            '<button class="cart-item-remove" onclick="removeFromCart(' + idx + ')">&times;</button>' +
+          '</div>';
+        }).join('');
+      }
+    }
+
+    function addToCart(productId) {
+      var product = null;
+      for (var i = 0; i < allProducts.length; i++) {
+        if (allProducts[i].id === productId) { product = allProducts[i]; break; }
+      }
+      if (!product) return;
+
+      // Check if already in cart
+      for (var j = 0; j < cart.length; j++) {
+        if (cart[j].id === productId) {
+          cart[j].quantity++;
+          saveCart();
+          toggleCart(true);
+          return;
+        }
+      }
+
+      cart.push({
+        id: product.id,
+        name: product.name,
+        display_text: product.display_text,
+        price: parseFloat(product.price),
+        color: product.color,
+        quantity: 1
+      });
+      saveCart();
+      toggleCart(true);
+    }
+
+    function removeFromCart(idx) {
+      cart.splice(idx, 1);
+      saveCart();
+    }
+
+    function changeQty(idx, delta) {
+      cart[idx].quantity += delta;
+      if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+      saveCart();
+    }
+
+    function toggleCart(forceOpen) {
+      var drawer = document.getElementById('cartDrawer');
+      var overlay = document.getElementById('cartOverlay');
+      var isOpen = drawer.className.indexOf('open') !== -1;
+
+      if (forceOpen === true || !isOpen) {
+        drawer.className = 'cart-drawer open';
+        overlay.className = 'cart-overlay open';
+      } else {
+        drawer.className = 'cart-drawer';
+        overlay.className = 'cart-overlay';
+      }
+    }
+
+    function checkout() {
+      if (cart.length === 0) return;
+
+      var items = cart.map(function(item) {
+        return {
+          id: item.id,
+          name: item.name,
+          description: 'Custom sign/piece',
+          price: item.price,
+          color: item.color,
+          quantity: item.quantity
+        };
+      });
+
+      fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: items })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert('Error creating checkout. Please try again.');
+        }
+      })
+      .catch(function(err) {
+        console.error('Checkout error:', err);
+        alert('Error connecting to payment. Please try again.');
+      });
+    }
+
+    // Init cart UI on load
+    updateCartUI();
+  </script>
+</body>
+</html>
