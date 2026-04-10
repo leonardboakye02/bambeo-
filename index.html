@@ -66,10 +66,6 @@
     .mode-toggle{display:flex;gap:8px;margin-bottom:16px}
     .mode-btn{flex:1;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-size:13px;font-family:inherit;cursor:pointer;transition:all 0.2s}
     .mode-btn.active{background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)}
-    .brush-sizes{display:flex;gap:8px;margin-top:12px}
-    .brush-btn{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center}
-    .brush-btn.active{border-color:#fff;background:rgba(255,255,255,0.1)}
-    .brush-btn span{background:#fff;border-radius:50%}
     .canvas-actions{display:flex;gap:8px;margin-top:12px}
     .canvas-actions button{flex:1}
     .design-canvas-wrap{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:8px}
@@ -233,7 +229,6 @@
         <div class="design-controls">
           <div class="mode-toggle">
             <button class="mode-btn active" id="modeText" onclick="setMode('text')">Text</button>
-            <button class="mode-btn" id="modeDraw" onclick="setMode('draw')">Draw</button>
             <button class="mode-btn" id="modeUpload" onclick="setMode('upload')">Upload</button>
           </div>
           
@@ -245,22 +240,6 @@
             <div class="control-card">
               <label class="control-label">Size: <span id="sizeValue">60</span></label>
               <input type="range" min="30" max="100" value="60" style="width:100%" id="sizeSlider" oninput="updateSize(this.value)">
-            </div>
-          </div>
-          
-          <div id="drawControls" style="display:none">
-            <div class="control-card">
-              <label class="control-label">Brush Size</label>
-              <div class="brush-sizes">
-                <button class="brush-btn" onclick="setBrush(4,this)"><span style="width:4px;height:4px"></span></button>
-                <button class="brush-btn active" onclick="setBrush(8,this)"><span style="width:8px;height:8px"></span></button>
-                <button class="brush-btn" onclick="setBrush(12,this)"><span style="width:12px;height:12px"></span></button>
-                <button class="brush-btn" onclick="setBrush(20,this)"><span style="width:20px;height:20px"></span></button>
-              </div>
-              <div class="canvas-actions">
-                <button class="btn btn-outline btn-sm" onclick="undoStroke()">Undo</button>
-                <button class="btn btn-outline btn-sm" onclick="clearCanvas()">Clear</button>
-              </div>
             </div>
           </div>
           
@@ -438,10 +417,6 @@
     var currentColor = '#ff66b2';
     var currentSize = 60;
     var currentMode = 'text';
-    var brushSize = 8;
-    var isDrawing = false;
-    var strokes = [];
-    var currentStroke = [];
     var canvas, ctx;
     var includeDesign = false;
     var uploadedImage = null;
@@ -450,13 +425,6 @@
       canvas = document.getElementById('designCanvas');
       ctx = canvas.getContext('2d');
       
-      canvas.addEventListener('mousedown', startDrawing);
-      canvas.addEventListener('mousemove', draw);
-      canvas.addEventListener('mouseup', stopDrawing);
-      canvas.addEventListener('mouseleave', stopDrawing);
-      canvas.addEventListener('touchstart', handleTouch, {passive: false});
-      canvas.addEventListener('touchmove', handleTouch, {passive: false});
-      canvas.addEventListener('touchend', stopDrawing);
       
       document.getElementById('modal').addEventListener('click', function(e) {
         if (e.target.id === 'modal') closeModal();
@@ -558,10 +526,8 @@
     function setMode(mode) {
       currentMode = mode;
       document.getElementById('modeText').className = 'mode-btn' + (mode === 'text' ? ' active' : '');
-      document.getElementById('modeDraw').className = 'mode-btn' + (mode === 'draw' ? ' active' : '');
       document.getElementById('modeUpload').className = 'mode-btn' + (mode === 'upload' ? ' active' : '');
       document.getElementById('textControls').style.display = mode === 'text' ? 'block' : 'none';
-      document.getElementById('drawControls').style.display = mode === 'draw' ? 'block' : 'none';
       document.getElementById('uploadControls').style.display = mode === 'upload' ? 'block' : 'none';
       updateCanvas();
     }
@@ -575,12 +541,6 @@
       updateCanvas();
     }
 
-    function setBrush(size, btn) {
-      brushSize = size;
-      var btns = document.querySelectorAll('.brush-btn');
-      for (var i = 0; i < btns.length; i++) btns[i].className = 'brush-btn';
-      btn.className = 'brush-btn active';
-    }
 
     function updateSize(size) {
       currentSize = parseInt(size);
@@ -619,16 +579,6 @@
         ctx.drawImage(uploadedImage, imgX, imgY, w, h);
       }
       
-      // Strokes - only show in draw mode
-      if (currentMode === 'draw') {
-        for (var i = 0; i < strokes.length; i++) {
-          drawStroke(strokes[i]);
-        }
-        if (currentStroke.length > 0) {
-          drawStroke({ points: currentStroke, color: currentColor, size: brushSize });
-        }
-      }
-      
       // Text - only show in text mode
       if (currentMode === 'text') {
         var text = document.getElementById('designText').value || 'Bambeo';
@@ -638,75 +588,6 @@
         ctx.textBaseline = 'middle';
         ctx.fillText(text, canvas.width / 2, canvas.height / 2);
       }
-    }
-
-    function drawStroke(stroke) {
-      if (stroke.points.length < 2) return;
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-      for (var i = 1; i < stroke.points.length; i++) {
-        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
-      }
-      ctx.stroke();
-    }
-
-    function getPos(e) {
-      var rect = canvas.getBoundingClientRect();
-      var scaleX = canvas.width / rect.width;
-      var scaleY = canvas.height / rect.height;
-      return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY
-      };
-    }
-
-    function startDrawing(e) {
-      if (currentMode !== 'draw') return;
-      isDrawing = true;
-      currentStroke = [getPos(e)];
-    }
-
-    function draw(e) {
-      if (!isDrawing || currentMode !== 'draw') return;
-      currentStroke.push(getPos(e));
-      updateCanvas();
-    }
-
-    function stopDrawing() {
-      if (isDrawing && currentStroke.length > 0) {
-        strokes.push({ points: currentStroke.slice(), color: currentColor, size: brushSize });
-        currentStroke = [];
-      }
-      isDrawing = false;
-    }
-
-    function handleTouch(e) {
-      e.preventDefault();
-      var touch = e.touches[0];
-      var pos = { clientX: touch.clientX, clientY: touch.clientY };
-      if (e.type === 'touchstart') {
-        startDrawing(pos);
-      } else if (e.type === 'touchmove') {
-        if (isDrawing && currentMode === 'draw') {
-          currentStroke.push(getPos(pos));
-          updateCanvas();
-        }
-      }
-    }
-
-    function undoStroke() {
-      strokes.pop();
-      updateCanvas();
-    }
-
-    function clearCanvas() {
-      strokes = [];
-      currentStroke = [];
-      updateCanvas();
     }
 
     function handleImageUpload(e) {
