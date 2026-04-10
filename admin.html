@@ -563,6 +563,7 @@
             <a href="mailto:${encodeURI(q.email)}" class="btn btn-primary btn-sm">Email Customer</a>
             ${safeStatus(q.status) === 'new' ? `<button class="btn btn-warning btn-sm" onclick="quickUpdateStatus('${esc(q.id)}','contacted')">Mark Contacted</button>` : ''}
             ${safeStatus(q.status) === 'contacted' ? `<button class="btn btn-success btn-sm" onclick="quickUpdateStatus('${esc(q.id)}','completed')">Mark Completed</button>` : ''}
+            ${safeStatus(q.status) === 'completed' ? `<button class="btn btn-danger btn-sm" onclick="deleteQuote('${esc(q.id)}')">Remove</button>` : ''}
           </div>
         </div>
       `).join('');
@@ -611,6 +612,15 @@
       const { error } = await supabase.from('quote_requests').update({ status }).eq('id', id);
       if (error) { showToast('Error updating status', 'error'); return; }
       showToast('Status updated');
+      loadQuotes();
+      loadDashboard();
+    }
+
+    async function deleteQuote(id) {
+      if (!confirm('Remove this completed quote?')) return;
+      const { error } = await supabase.from('quote_requests').delete().eq('id', id);
+      if (error) { showToast('Error removing quote', 'error'); return; }
+      showToast('Quote removed');
       loadQuotes();
       loadDashboard();
     }
