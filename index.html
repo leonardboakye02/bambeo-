@@ -240,6 +240,14 @@
               <input type="range" min="30" max="100" value="60" style="width:100%" id="sizeSlider" oninput="updateSize(this.value)">
             </div>
           </div>
+
+          <div class="control-card">
+            <label class="control-label">Reference Image (Optional)</label>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Upload a logo, sketch, or reference for your piece</p>
+            <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
+            <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('imageUpload').click()">Choose Image</button>
+            <p id="uploadFileName" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center"></p>
+          </div>
           
           <div class="control-card">
             <label class="control-label">Color</label>
@@ -571,6 +579,18 @@
       document.getElementById('estPrice').textContent = '$' + price;
     }
 
+    var uploadedImageData = null;
+    function handleImageUpload(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(event) {
+        uploadedImageData = event.target.result;
+        document.getElementById('uploadFileName').textContent = file.name;
+      };
+      reader.readAsDataURL(file);
+    }
+
     function openModal() {
       includeDesign = false;
       document.getElementById('designPreview').style.display = 'none';
@@ -606,7 +626,7 @@
         design_text: document.getElementById('designText').value,
         design_color: currentColor,
         design_size: currentSize,
-        design_image: includeDesign ? (document.getElementById('preview3d').toDataURL('image/png') || canvas.toDataURL('image/png')) : null,
+        design_image: uploadedImageData || (includeDesign ? document.getElementById('preview3d').toDataURL('image/png') : null),
         status: 'new'
       };
       
@@ -919,25 +939,23 @@
 
       const mesh = new THREE.Mesh(geo, mat);
       mesh.castShadow = true;
-      // Rotate text to lay flat then stand up — letters face the camera
-      mesh.rotation.x = -Math.PI / 2;
       group.add(mesh);
 
       // Flat base under the letters
       const bb = geo.boundingBox;
       const tw = bb.max.x - bb.min.x;
-      const td = depth;
-      const baseW = tw + 1.0;
-      const baseD = td + 0.8;
+      const th = bb.max.y - bb.min.y;
+      const baseW = tw + 1.2;
+      const baseD = depth + 0.6;
       const baseH = 0.3 * s;
       const baseGeo = new THREE.BoxGeometry(baseW, baseH, baseD);
       const baseMat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(color).multiplyScalar(0.7),
+        color: new THREE.Color(color).multiplyScalar(0.65),
         roughness: 0.6,
         metalness: 0.0
       });
       const base = new THREE.Mesh(baseGeo, baseMat);
-      base.position.y = -fontSize / 2 - baseH / 2 + 0.05;
+      base.position.y = bb.min.y - baseH / 2;
       base.castShadow = true;
       base.receiveShadow = true;
       group.add(base);
@@ -945,10 +963,11 @@
       currentGroup = group;
       scene.add(group);
 
-      // 3/4 elevated angle like a slicer preview
-      const dist = Math.max(baseW * 1.6, 8);
-      camera.position.set(dist * 0.5, dist * 0.45, dist * 0.7);
-      controls.target.set(0, 0, 0);
+      // 3/4 elevated view — like looking at a sign on a desk
+      const fitW = Math.max(tw + 2, 6);
+      const camDist = fitW * 1.4;
+      camera.position.set(camDist * 0.6, camDist * 0.35, camDist * 0.8);
+      controls.target.set(0, th * 0.15, 0);
       controls.update();
     }
 
