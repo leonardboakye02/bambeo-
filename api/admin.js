@@ -97,10 +97,10 @@ module.exports = async (req, res) => {
     switch (action) {
       case 'select': {
         const cols = data?.select || '*';
-        url += `?select=${encodeURIComponent(cols)}`;
+        url += `?select=${cols}`;
         if (filters) {
           for (const [col, val] of Object.entries(filters)) {
-            url += `&${encodeURIComponent(col)}=eq.${encodeURIComponent(val)}`;
+            url += `&${col}=eq.${val}`;
           }
         }
         break;
@@ -115,7 +115,7 @@ module.exports = async (req, res) => {
         method = 'PATCH';
         headers['Prefer'] = 'return=representation';
         if (filters) {
-          const params = Object.entries(filters).map(([c, v]) => `${encodeURIComponent(c)}=eq.${encodeURIComponent(v)}`).join('&');
+          const params = Object.entries(filters).map(([c, v]) => `${c}=eq.${v}`).join('&');
           url += `?${params}`;
         }
         body = JSON.stringify(data?.rows);
@@ -124,7 +124,7 @@ module.exports = async (req, res) => {
       case 'delete': {
         method = 'DELETE';
         if (filters) {
-          const params = Object.entries(filters).map(([c, v]) => `${encodeURIComponent(c)}=eq.${encodeURIComponent(v)}`).join('&');
+          const params = Object.entries(filters).map(([c, v]) => `${c}=eq.${v}`).join('&');
           url += `?${params}`;
         }
         break;
