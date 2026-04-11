@@ -66,13 +66,10 @@
     .mode-toggle{display:flex;gap:8px;margin-bottom:16px}
     .mode-btn{flex:1;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-size:13px;font-family:inherit;cursor:pointer;transition:all 0.2s}
     .mode-btn.active{background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)}
+    .canvas-actions{display:flex;gap:8px;margin-top:12px}
     .canvas-actions button{flex:1}
-    .design-canvas-wrap{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:8px;position:relative}
-    .design-canvas{background:#111;border-radius:12px;width:100%;aspect-ratio:16/10;cursor:crosshair;display:none;touch-action:none}
-    #preview3d{width:100%;aspect-ratio:16/10;border-radius:12px;display:block;cursor:grab;touch-action:none}
-    #preview3d:active{cursor:grabbing}
-    .preview-hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.3);font-size:11px;pointer-events:none;transition:opacity 0.5s}
-    .preview-hint.hidden{opacity:0}
+    .design-canvas-wrap{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:8px}
+    .design-canvas{background:#111;border-radius:12px;width:100%;aspect-ratio:16/10;cursor:crosshair;display:block;touch-action:none}
     .design-estimate{display:flex;justify-content:space-between;margin-top:16px;padding:16px;background:var(--glass);border:1px solid var(--border);border-radius:12px}
     .estimate-label{font-size:11px;color:var(--text-dim);text-transform:uppercase}
     .estimate-value{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-top:4px}
@@ -230,25 +227,35 @@
       <h2 class="section-title">CREATE YOUR <span class="accent">PIECE</span></h2>
       <div class="design-grid">
         <div class="design-controls">
+          <div class="mode-toggle">
+            <button class="mode-btn active" id="modeText" onclick="setMode('text')">Text</button>
+            <button class="mode-btn" id="modeUpload" onclick="setMode('upload')">Upload</button>
+          </div>
+          
           <div id="textControls">
             <div class="control-card">
               <label class="control-label">Your Text</label>
-              <input type="text" class="control-input" id="designText" value="Bambeo" oninput="updateCanvas(); if(window.update3DPreview) window.update3DPreview()">
+              <input type="text" class="control-input" id="designText" value="Bambeo" oninput="updateCanvas()">
             </div>
             <div class="control-card">
               <label class="control-label">Size: <span id="sizeValue">60</span></label>
               <input type="range" min="30" max="100" value="60" style="width:100%" id="sizeSlider" oninput="updateSize(this.value)">
             </div>
           </div>
-
-          <div class="control-card">
-            <label class="control-label">Reference Image (Optional)</label>
-            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Upload a logo, sketch, or reference for your piece</p>
-            <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
-            <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('imageUpload').click()">Choose Image</button>
-            <p id="uploadFileName" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center"></p>
+          
+          <div id="uploadControls" style="display:none">
+            <div class="control-card">
+              <label class="control-label">Upload Your Design</label>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Upload a logo, sketch, or reference image</p>
+              <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
+              <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('imageUpload').click()">Choose Image</button>
+              <p id="uploadFileName" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center"></p>
+              <div class="canvas-actions" style="margin-top:12px">
+                <button class="btn btn-outline btn-sm" onclick="clearUpload()">Clear</button>
+              </div>
+            </div>
           </div>
-
+          
           <div class="control-card">
             <label class="control-label">Color</label>
             <div class="color-grid">
@@ -262,15 +269,13 @@
               <button class="color-btn" style="background:#fff5e6" onclick="setColor('#fff5e6',this)"></button>
             </div>
           </div>
-
+          
           <button class="btn btn-primary" style="width:100%;padding:16px" onclick="openQuoteWithDesign()">Get Quote</button>
         </div>
-
+        
         <div>
           <div class="design-canvas-wrap">
             <canvas id="designCanvas" class="design-canvas" width="800" height="500"></canvas>
-            <canvas id="preview3d"></canvas>
-            <div class="preview-hint" id="previewHint">Drag to rotate · Scroll to zoom</div>
           </div>
           <div class="design-estimate">
             <div><div class="estimate-label">Est. Size</div><div class="estimate-value" id="estSize">18" x 8"</div></div>
@@ -411,9 +416,10 @@
     }
     var currentColor = '#ff66b2';
     var currentSize = 60;
-    var currentMode = 'text'; // text only now
+    var currentMode = 'text';
     var canvas, ctx;
     var includeDesign = false;
+    var uploadedImage = null;
 
     document.addEventListener('DOMContentLoaded', function() {
       canvas = document.getElementById('designCanvas');
@@ -517,6 +523,14 @@
       updateEstimate();
     }
 
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('modeText').className = 'mode-btn' + (mode === 'text' ? ' active' : '');
+      document.getElementById('modeUpload').className = 'mode-btn' + (mode === 'upload' ? ' active' : '');
+      document.getElementById('textControls').style.display = mode === 'text' ? 'block' : 'none';
+      document.getElementById('uploadControls').style.display = mode === 'upload' ? 'block' : 'none';
+      updateCanvas();
+    }
 
     function setColor(color, btn) {
       currentColor = color;
@@ -525,7 +539,6 @@
       btn.className = 'color-btn active';
       document.getElementById('estPrice').style.color = color;
       updateCanvas();
-      if (window.update3DPreview) window.update3DPreview();
     }
 
 
@@ -534,7 +547,6 @@
       document.getElementById('sizeValue').textContent = size;
       updateCanvas();
       updateEstimate();
-      if (window.update3DPreview) window.update3DPreview();
     }
 
     function updateCanvas() {
@@ -557,8 +569,18 @@
         ctx.stroke();
       }
       
-      // Text preview
-      {
+      // Uploaded image - only show in upload mode
+      if (currentMode === 'upload' && uploadedImage) {
+        var scale = Math.min(canvas.width / uploadedImage.width, canvas.height / uploadedImage.height) * 0.9;
+        var w = uploadedImage.width * scale;
+        var h = uploadedImage.height * scale;
+        var imgX = (canvas.width - w) / 2;
+        var imgY = (canvas.height - h) / 2;
+        ctx.drawImage(uploadedImage, imgX, imgY, w, h);
+      }
+      
+      // Text - only show in text mode
+      if (currentMode === 'text') {
         var text = document.getElementById('designText').value || 'Bambeo';
         ctx.font = 'bold ' + currentSize + 'px Syne, sans-serif';
         ctx.fillStyle = currentColor;
@@ -568,6 +590,28 @@
       }
     }
 
+    function handleImageUpload(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(event) {
+        var img = new Image();
+        img.onload = function() {
+          uploadedImage = img;
+          document.getElementById('uploadFileName').textContent = file.name;
+          updateCanvas();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearUpload() {
+      uploadedImage = null;
+      document.getElementById('imageUpload').value = '';
+      document.getElementById('uploadFileName').textContent = '';
+      updateCanvas();
+    }
 
     function updateEstimate() {
       var textEl = document.getElementById('designText');
@@ -577,19 +621,6 @@
       var price = Math.round(BASE_PRICE + text.length * PRICE_PER_CHAR + currentSize * PRICE_PER_SIZE);
       document.getElementById('estSize').textContent = width + '" x ' + height + '"';
       document.getElementById('estPrice').textContent = '$' + price;
-    }
-
-    var uploadedImageData = null;
-
-    function handleImageUpload(e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function(event) {
-        uploadedImageData = event.target.result;
-        document.getElementById('uploadFileName').textContent = file.name;
-      };
-      reader.readAsDataURL(file);
     }
 
     function openModal() {
@@ -627,7 +658,7 @@
         design_text: document.getElementById('designText').value,
         design_color: currentColor,
         design_size: currentSize,
-        design_image: uploadedImageData || (includeDesign ? document.getElementById('preview3d').toDataURL('image/png') : null),
+        design_image: includeDesign ? canvas.toDataURL('image/png') : null,
         status: 'new'
       };
       
@@ -792,191 +823,6 @@
 
     // Init cart UI on load
     updateCartUI();
-  </script>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
-    }
-  }
-  </script>
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-    import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-
-    const el = document.getElementById('preview3d');
-    const wrap = el.parentElement;
-    const hint = document.getElementById('previewHint');
-
-    // Scene
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-
-    // Perspective camera — front-facing view of upright text
-    const camera = new THREE.PerspectiveCamera(35, 16 / 10, 0.1, 500);
-    camera.position.set(0, 1, 12);
-
-    const renderer = new THREE.WebGLRenderer({ canvas: el, antialias: true, preserveDrawingBuffer: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
-
-    function resize() {
-      const w = wrap.clientWidth - 16;
-      const h = w * (10 / 16);
-      renderer.setSize(w, h);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Lighting — studio setup
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-
-    const key = new THREE.DirectionalLight(0xffffff, 1.4);
-    key.position.set(5, 8, 10);
-    key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
-    key.shadow.camera.near = 0.5;
-    key.shadow.camera.far = 40;
-    key.shadow.camera.left = -15;
-    key.shadow.camera.right = 15;
-    key.shadow.camera.top = 15;
-    key.shadow.camera.bottom = -15;
-    scene.add(key);
-
-    const fill = new THREE.DirectionalLight(0x8899ff, 0.5);
-    fill.position.set(-6, 4, 6);
-    scene.add(fill);
-
-    const back = new THREE.DirectionalLight(0xffffff, 0.3);
-    back.position.set(0, 3, -8);
-    scene.add(back);
-
-    // Controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.06;
-    controls.enablePan = false;
-    controls.minDistance = 4;
-    controls.maxDistance = 40;
-    controls.maxPolarAngle = Math.PI * 0.75;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.8;
-
-    let hintHidden = false;
-    controls.addEventListener('start', () => {
-      if (!hintHidden) { hint.classList.add('hidden'); hintHidden = true; }
-    });
-
-    // Font
-    let loadedFont = null;
-    new FontLoader().load(
-      'https://unpkg.com/three@0.162.0/examples/fonts/helvetiker_bold.typeface.json',
-      font => { loadedFont = font; update3D(); }
-    );
-
-    let currentGroup = null;
-
-    function clearScene() {
-      if (!currentGroup) return;
-      scene.remove(currentGroup);
-      currentGroup.traverse(c => {
-        if (c.geometry) c.geometry.dispose();
-        if (c.material) {
-          if (Array.isArray(c.material)) c.material.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
-          else { if (c.material.map) c.material.map.dispose(); c.material.dispose(); }
-        }
-      });
-      currentGroup = null;
-    }
-
-    function createTextMesh(text, color, size) {
-      if (!loadedFont || !text) return;
-      clearScene();
-
-      const group = new THREE.Group();
-      const s = size / 60;
-      const fontSize = 1.6 * s;
-      const depth = 0.5 * s;
-
-      const geo = new TextGeometry(text, {
-        font: loadedFont,
-        size: fontSize,
-        depth: depth,
-        curveSegments: 12,
-        bevelEnabled: true,
-        bevelThickness: 0.04 * s,
-        bevelSize: 0.03 * s,
-        bevelSegments: 3
-      });
-      geo.center();
-      geo.computeBoundingBox();
-      const bb = geo.boundingBox;
-      const tw = bb.max.x - bb.min.x;
-      const th = bb.max.y - bb.min.y;
-
-      const mat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(color),
-        roughness: 0.35,
-        metalness: 0.05
-      });
-
-      // Text stands upright — no rotation needed
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.castShadow = true;
-      mesh.position.y = th / 2;
-      group.add(mesh);
-
-      // Floor plane
-      const floorGeo = new THREE.PlaneGeometry(30, 30);
-      const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
-      const floor = new THREE.Mesh(floorGeo, floorMat);
-      floor.rotation.x = -Math.PI / 2;
-      floor.receiveShadow = true;
-      group.add(floor);
-
-      currentGroup = group;
-      scene.add(group);
-
-      // Position camera to frame the text
-      const maxDim = Math.max(tw, th);
-      const dist = maxDim / (2 * Math.tan((35 * Math.PI) / 360)) + 2;
-      camera.position.set(0, th * 0.6, dist);
-      controls.target.set(0, th * 0.4, 0);
-      controls.update();
-    }
-
-    function update3D() {
-      const color = window.currentColor || '#ff66b2';
-      const size = window.currentSize || 60;
-      const el = document.getElementById('designText');
-      createTextMesh((el ? el.value : 'Bambeo') || 'Bambeo', color, size);
-    }
-
-    window.update3DPreview = update3D;
-
-    (function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    })();
-
-    // Capture 3D preview for quote submission
-    window.openQuoteWithDesign = function() {
-      renderer.render(scene, camera);
-      window.includeDesign = true;
-      document.getElementById('previewImage').src = renderer.domElement.toDataURL('image/png');
-      document.getElementById('designPreview').style.display = 'block';
-      document.getElementById('modal').className = 'modal-overlay open';
-    };
   </script>
 </body>
 </html>
