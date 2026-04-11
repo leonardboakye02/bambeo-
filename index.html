@@ -230,11 +230,6 @@
       <h2 class="section-title">CREATE YOUR <span class="accent">PIECE</span></h2>
       <div class="design-grid">
         <div class="design-controls">
-          <div class="mode-toggle">
-            <button class="mode-btn active" onclick="setMode('text',this)">Text</button>
-            <button class="mode-btn" onclick="setMode('upload',this)">Upload</button>
-          </div>
-
           <div id="textControls">
             <div class="control-card">
               <label class="control-label">Your Text</label>
@@ -244,31 +239,27 @@
               <label class="control-label">Size: <span id="sizeValue">60</span></label>
               <input type="range" min="30" max="100" value="60" style="width:100%" id="sizeSlider" oninput="updateSize(this.value)">
             </div>
-            <div class="control-card">
-              <label class="control-label">Color</label>
-              <div class="color-grid">
-                <button class="color-btn active" style="background:var(--pink)" onclick="setColor('#ff66b2',this)"></button>
-                <button class="color-btn" style="background:var(--blue)" onclick="setColor('#66d9ff',this)"></button>
-                <button class="color-btn" style="background:var(--purple)" onclick="setColor('#b366ff',this)"></button>
-                <button class="color-btn" style="background:var(--green)" onclick="setColor('#66ff99',this)"></button>
-                <button class="color-btn" style="background:var(--orange)" onclick="setColor('#ff9966',this)"></button>
-                <button class="color-btn" style="background:var(--red)" onclick="setColor('#ff6680',this)"></button>
-                <button class="color-btn" style="background:#fff" onclick="setColor('#ffffff',this)"></button>
-                <button class="color-btn" style="background:#fff5e6" onclick="setColor('#fff5e6',this)"></button>
-              </div>
-            </div>
           </div>
 
-          <div id="uploadControls" style="display:none">
-            <div class="control-card">
-              <label class="control-label">Upload Reference Image</label>
-              <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Upload a logo, sketch, or reference for your piece</p>
-              <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
-              <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('imageUpload').click()">Choose Image</button>
-              <p id="uploadFileName" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center"></p>
-            </div>
-            <div id="uploadPreviewWrap" class="control-card" style="display:none">
-              <img id="uploadPreviewImg" style="width:100%;border-radius:8px" alt="Preview">
+          <div class="control-card">
+            <label class="control-label">Reference Image (Optional)</label>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Upload a logo, sketch, or reference for your piece</p>
+            <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
+            <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('imageUpload').click()">Choose Image</button>
+            <p id="uploadFileName" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center"></p>
+          </div>
+
+          <div class="control-card">
+            <label class="control-label">Color</label>
+            <div class="color-grid">
+              <button class="color-btn active" style="background:var(--pink)" onclick="setColor('#ff66b2',this)"></button>
+              <button class="color-btn" style="background:var(--blue)" onclick="setColor('#66d9ff',this)"></button>
+              <button class="color-btn" style="background:var(--purple)" onclick="setColor('#b366ff',this)"></button>
+              <button class="color-btn" style="background:var(--green)" onclick="setColor('#66ff99',this)"></button>
+              <button class="color-btn" style="background:var(--orange)" onclick="setColor('#ff9966',this)"></button>
+              <button class="color-btn" style="background:var(--red)" onclick="setColor('#ff6680',this)"></button>
+              <button class="color-btn" style="background:#fff" onclick="setColor('#ffffff',this)"></button>
+              <button class="color-btn" style="background:#fff5e6" onclick="setColor('#fff5e6',this)"></button>
             </div>
           </div>
 
@@ -280,7 +271,6 @@
             <canvas id="designCanvas" class="design-canvas" width="800" height="500"></canvas>
             <canvas id="preview3d"></canvas>
             <div class="preview-hint" id="previewHint">Drag to rotate · Scroll to zoom</div>
-            <div id="uploadPlaceholder" style="display:none;width:100%;aspect-ratio:16/10;border-radius:12px;background:#111;display:none;align-items:center;justify-content:center;color:var(--text-muted);font-size:14px;text-align:center;padding:24px">Upload a reference image to include with your quote</div>
           </div>
           <div class="design-estimate">
             <div><div class="estimate-label">Est. Size</div><div class="estimate-value" id="estSize">18" x 8"</div></div>
@@ -590,35 +580,6 @@
     }
 
     var uploadedImageData = null;
-    var designMode = 'text';
-
-    function setMode(mode, btn) {
-      designMode = mode;
-      var btns = document.querySelectorAll('.mode-btn');
-      btns.forEach(function(b) { b.classList.remove('active'); });
-      if (btn) btn.classList.add('active');
-
-      var textControls = document.getElementById('textControls');
-      var uploadControls = document.getElementById('uploadControls');
-      var preview3d = document.getElementById('preview3d');
-      var placeholder = document.getElementById('uploadPlaceholder');
-      var hint = document.getElementById('previewHint');
-
-      if (mode === 'text') {
-        textControls.style.display = '';
-        uploadControls.style.display = 'none';
-        preview3d.style.display = 'block';
-        placeholder.style.display = 'none';
-        if (hint) hint.style.display = '';
-        if (window.update3DPreview) window.update3DPreview();
-      } else {
-        textControls.style.display = 'none';
-        uploadControls.style.display = '';
-        preview3d.style.display = 'none';
-        placeholder.style.display = 'flex';
-        if (hint) hint.style.display = 'none';
-      }
-    }
 
     function handleImageUpload(e) {
       var file = e.target.files[0];
@@ -627,12 +588,6 @@
       reader.onload = function(event) {
         uploadedImageData = event.target.result;
         document.getElementById('uploadFileName').textContent = file.name;
-        var previewImg = document.getElementById('uploadPreviewImg');
-        var previewWrap = document.getElementById('uploadPreviewWrap');
-        if (previewImg && previewWrap) {
-          previewImg.src = event.target.result;
-          previewWrap.style.display = '';
-        }
       };
       reader.readAsDataURL(file);
     }
@@ -859,68 +814,62 @@
 
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a2e);
+    scene.background = new THREE.Color(0x111111);
 
-    // Orthographic camera — no perspective distortion (slicer-style)
-    const aspect = 16 / 10;
-    let frustum = 6;
-    const camera = new THREE.OrthographicCamera(
-      -frustum * aspect, frustum * aspect,
-      frustum, -frustum, 0.1, 200
-    );
-    // Top-down with slight angle (like looking at a print bed)
-    camera.position.set(0, 12, 5);
-    camera.lookAt(0, 0, 0);
+    // Perspective camera — front-facing view of upright text
+    const camera = new THREE.PerspectiveCamera(35, 16 / 10, 0.1, 500);
+    camera.position.set(0, 1, 12);
 
     const renderer = new THREE.WebGLRenderer({ canvas: el, antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.1;
 
     function resize() {
       const w = wrap.clientWidth - 16;
       const h = w * (10 / 16);
       renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
     }
     resize();
     window.addEventListener('resize', resize);
 
-    // Lighting — bright top-down like a slicer
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    // Lighting — studio setup
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-    const topLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    topLight.position.set(0, 15, 0);
-    topLight.castShadow = true;
-    topLight.shadow.mapSize.set(1024, 1024);
-    topLight.shadow.camera.near = 0.5;
-    topLight.shadow.camera.far = 40;
-    topLight.shadow.camera.left = -15;
-    topLight.shadow.camera.right = 15;
-    topLight.shadow.camera.top = 15;
-    topLight.shadow.camera.bottom = -15;
-    scene.add(topLight);
+    const key = new THREE.DirectionalLight(0xffffff, 1.4);
+    key.position.set(5, 8, 10);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.camera.near = 0.5;
+    key.shadow.camera.far = 40;
+    key.shadow.camera.left = -15;
+    key.shadow.camera.right = 15;
+    key.shadow.camera.top = 15;
+    key.shadow.camera.bottom = -15;
+    scene.add(key);
 
-    const frontLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    frontLight.position.set(0, 5, 10);
-    scene.add(frontLight);
+    const fill = new THREE.DirectionalLight(0x8899ff, 0.5);
+    fill.position.set(-6, 4, 6);
+    scene.add(fill);
 
-    const sideLight = new THREE.DirectionalLight(0x8899ff, 0.3);
-    sideLight.position.set(-8, 6, 0);
-    scene.add(sideLight);
+    const back = new THREE.DirectionalLight(0xffffff, 0.3);
+    back.position.set(0, 3, -8);
+    scene.add(back);
 
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
     controls.enablePan = false;
-    controls.enableRotate = true;
-    controls.minZoom = 0.3;
-    controls.maxZoom = 3;
-    controls.maxPolarAngle = Math.PI * 0.6;
-    controls.minPolarAngle = Math.PI * 0.1;
-    controls.autoRotate = false;
+    controls.minDistance = 4;
+    controls.maxDistance = 40;
+    controls.maxPolarAngle = Math.PI * 0.75;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.8;
 
     let hintHidden = false;
     controls.addEventListener('start', () => {
@@ -955,8 +904,8 @@
 
       const group = new THREE.Group();
       const s = size / 60;
-      const depth = 0.8 * s;
-      const fontSize = 1.8 * s;
+      const fontSize = 1.6 * s;
+      const depth = 0.5 * s;
 
       const geo = new TextGeometry(text, {
         font: loadedFont,
@@ -964,7 +913,7 @@
         depth: depth,
         curveSegments: 12,
         bevelEnabled: true,
-        bevelThickness: 0.05 * s,
+        bevelThickness: 0.04 * s,
         bevelSize: 0.03 * s,
         bevelSegments: 3
       });
@@ -972,68 +921,36 @@
       geo.computeBoundingBox();
       const bb = geo.boundingBox;
       const tw = bb.max.x - bb.min.x;
-      const td = bb.max.z - bb.min.z; // extrusion depth
-      const th = bb.max.y - bb.min.y; // letter height
+      const th = bb.max.y - bb.min.y;
 
       const mat = new THREE.MeshStandardMaterial({
         color: new THREE.Color(color),
-        roughness: 0.4,
+        roughness: 0.35,
         metalness: 0.05
       });
 
+      // Text stands upright — no rotation needed
       const mesh = new THREE.Mesh(geo, mat);
       mesh.castShadow = true;
-      // Lay flat on XZ plane: rotate so text face points up (Y)
-      mesh.rotation.x = -Math.PI / 2;
-      // After rotation: text width = X, text height (letter H) = Z, extrusion = Y
-      mesh.position.y = td / 2; // sit on top of base plate
+      mesh.position.y = th / 2;
       group.add(mesh);
 
-      // Base plate (print bed) — dark with grid
-      const padX = 2.0;
-      const padZ = 1.5;
-      const baseW = tw + padX * 2;
-      const baseD = th + padZ * 2;
-      const baseGeo = new THREE.BoxGeometry(baseW, 0.15, baseD);
-      const baseMat = new THREE.MeshStandardMaterial({ color: 0x2a2a3a, roughness: 0.85 });
-      const base = new THREE.Mesh(baseGeo, baseMat);
-      base.position.y = -0.075;
-      base.receiveShadow = true;
-      group.add(base);
-
-      // Grid lines on top of base plate
-      const gridMat = new THREE.LineBasicMaterial({ color: 0x3a3a5a, transparent: true, opacity: 0.5 });
-      const gridY = 0.01;
-      const gridLines = [];
-      const stepX = 1.0;
-      const stepZ = 1.0;
-      for (let x = -baseW / 2; x <= baseW / 2; x += stepX) {
-        gridLines.push(new THREE.Vector3(x, gridY, -baseD / 2));
-        gridLines.push(new THREE.Vector3(x, gridY, baseD / 2));
-      }
-      for (let z = -baseD / 2; z <= baseD / 2; z += stepZ) {
-        gridLines.push(new THREE.Vector3(-baseW / 2, gridY, z));
-        gridLines.push(new THREE.Vector3(baseW / 2, gridY, z));
-      }
-      const gridGeo = new THREE.BufferGeometry().setFromPoints(gridLines);
-      const grid = new THREE.LineSegments(gridGeo, gridMat);
-      group.add(grid);
+      // Floor plane
+      const floorGeo = new THREE.PlaneGeometry(30, 30);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.95 });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      group.add(floor);
 
       currentGroup = group;
       scene.add(group);
 
-      // Fit orthographic camera to show all content
-      const viewW = baseW + 2;
-      const viewH = baseD + 2;
-      frustum = Math.max(viewH / 2, viewW / (2 * aspect)) * 1.2;
-      camera.left = -frustum * aspect;
-      camera.right = frustum * aspect;
-      camera.top = frustum;
-      camera.bottom = -frustum;
-      camera.updateProjectionMatrix();
-
-      camera.position.set(0, 12, 5);
-      controls.target.set(0, 0, 0);
+      // Position camera to frame the text
+      const maxDim = Math.max(tw, th);
+      const dist = maxDim / (2 * Math.tan((35 * Math.PI) / 360)) + 2;
+      camera.position.set(0, th * 0.6, dist);
+      controls.target.set(0, th * 0.4, 0);
       controls.update();
     }
 
