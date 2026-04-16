@@ -529,7 +529,10 @@
       if (!grid || !gallery || !gallery.length) return;
       var active = gallery.filter(function(g) { return g.is_active !== false; }).sort(function(a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
       grid.innerHTML = active.map(function(g) {
-        return '<div class="gallery-item"><span style="color:' + escColor(g.color) + '">' + esc(g.title) + '</span></div>';
+        var imgUrl = g.image_url && /^(https?:|data:image\/)/i.test(g.image_url) ? g.image_url : '';
+        var bg = imgUrl ? ' style="background-image:url(\'' + esc(imgUrl) + '\');background-size:cover;background-position:center"' : '';
+        var label = imgUrl ? '' : '<span style="color:' + escColor(g.color) + '">' + esc(g.title) + '</span>';
+        return '<div class="gallery-item"' + bg + '>' + label + '</div>';
       }).join('');
     }
 
