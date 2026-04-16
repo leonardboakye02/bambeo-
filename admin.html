@@ -554,6 +554,7 @@
             <div class="quote-detail"><strong>Project Type</strong>${esc(q.project_type || '-')}</div>
             <div class="quote-detail"><strong>Phone</strong>${esc(q.phone || '-')}</div>
             <div class="quote-detail"><strong>Design Text</strong>${esc(q.design_text || '-')}</div>
+            <div class="quote-detail"><strong>Style</strong>${esc(q.design_style || '-')}</div>
             <div class="quote-detail"><strong>Color</strong><span class="color-swatch" style="background:${escColor(q.design_color)}"></span></div>
           </div>
           ${q.message ? `<div class="quote-message">${esc(q.message)}</div>` : ''}
@@ -583,6 +584,7 @@
           <div class="quote-detail"><strong>Project Type</strong>${esc(q.project_type || '-')}</div>
           <div class="quote-detail"><strong>Status</strong><span class="badge badge-${ss(q.status) === 'new' ? 'warning' : ss(q.status) === 'contacted' ? 'info' : 'success'}">${esc(q.status || 'new')}</span></div>
           <div class="quote-detail"><strong>Design Text</strong>${esc(q.design_text || '-')}</div>
+          <div class="quote-detail"><strong>Sign Style</strong>${esc(q.design_style || '-')}</div>
           <div class="quote-detail"><strong>Design Size</strong>${esc(String(q.design_size || '-'))}</div>
           <div class="quote-detail"><strong>Color</strong><span class="color-swatch" style="background:${escColor(q.design_color)}"></span> ${esc(q.design_color || '-')}</div>
           <div class="quote-detail"><strong>Submitted</strong>${esc(new Date(q.created_at).toLocaleString())}</div>
