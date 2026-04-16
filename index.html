@@ -53,26 +53,43 @@
     .product-price strong{font-family:'Syne',sans-serif;font-size:18px}
     .product-price span{font-size:10px;color:var(--text-dim);text-transform:uppercase}
     .design-section{text-align:center}
-    .design-grid{display:grid;grid-template-columns:300px 1fr;gap:32px;text-align:left;max-width:1100px;margin:0 auto}
-    .design-controls{display:flex;flex-direction:column;gap:16px}
-    .control-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:20px}
-    .control-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:block}
-    .control-input{width:100%;padding:12px 16px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:#fff;font-size:14px;font-family:inherit;outline:none}
-    .control-input:focus{border-color:rgba(255,255,255,0.2)}
-    .color-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-    .color-btn{aspect-ratio:1;border:2px solid transparent;border-radius:8px;cursor:pointer;transition:transform 0.2s}
-    .color-btn:hover{transform:scale(1.05)}
-    .color-btn.active{border-color:#fff}
-    .mode-toggle{display:flex;gap:8px;margin-bottom:16px}
-    .mode-btn{flex:1;padding:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-size:13px;font-family:inherit;cursor:pointer;transition:all 0.2s}
-    .mode-btn.active{background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)}
-    .canvas-actions{display:flex;gap:8px;margin-top:12px}
-    .canvas-actions button{flex:1}
-    .design-canvas-wrap{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:8px}
-    .design-canvas{background:#111;border-radius:12px;width:100%;aspect-ratio:16/10;cursor:crosshair;display:block;touch-action:none}
-    .design-estimate{display:flex;justify-content:space-between;margin-top:16px;padding:16px;background:var(--glass);border:1px solid var(--border);border-radius:12px}
-    .estimate-label{font-size:11px;color:var(--text-dim);text-transform:uppercase}
-    .estimate-value{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-top:4px}
+    .design-grid{display:grid;grid-template-columns:280px 1fr;gap:24px;text-align:left;max-width:1200px;margin:0 auto;align-items:start}
+    .design-controls{display:flex;flex-direction:column;gap:0;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+    .ctrl-section{padding:20px}
+    .ctrl-section+.ctrl-section{border-top:1px solid var(--border)}
+    .control-label{font-size:11px;color:var(--text-muted);font-weight:500;letter-spacing:0.5px;margin-bottom:10px;display:block}
+    .control-input{width:100%;padding:10px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#fff;font-size:14px;font-family:inherit;outline:none;transition:border-color 0.2s,box-shadow 0.2s}
+    .control-input:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(255,102,178,0.12)}
+    .color-grid{display:flex;gap:8px;flex-wrap:wrap}
+    .color-btn{width:32px;height:32px;border:2px solid transparent;border-radius:50%;cursor:pointer;transition:all 0.2s;flex-shrink:0;position:relative}
+    .color-btn:hover{transform:scale(1.15);box-shadow:0 0 12px rgba(255,255,255,0.15)}
+    .color-btn.active{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,0.1)}
+    .mode-toggle{display:flex;background:rgba(255,255,255,0.06);border-radius:10px;padding:3px;gap:0}
+    .mode-btn{flex:1;padding:8px 0;background:transparent;border:none;border-radius:8px;color:var(--text-dim);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;transition:all 0.2s}
+    .mode-btn.active{background:rgba(255,255,255,0.12);color:#fff}
+    .mode-btn:hover:not(.active){color:var(--text-muted)}
+    .upload-zone{border:1.5px dashed rgba(255,255,255,0.12);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s}
+    .upload-zone:hover{border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.02)}
+    .upload-zone-icon{font-size:24px;margin-bottom:6px;opacity:0.4}
+    .upload-zone-text{font-size:12px;color:var(--text-dim)}
+    .upload-zone-name{font-size:12px;color:var(--pink);margin-top:6px;font-weight:500;word-break:break-all}
+    .upload-clear{margin-top:8px;padding:5px 12px;background:transparent;border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit;transition:all 0.15s}
+    .upload-clear:hover{border-color:rgba(255,255,255,0.2);color:var(--text-muted)}
+    .size-row{display:flex;align-items:center;gap:12px}
+    .size-row input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:rgba(255,255,255,0.1);border-radius:4px;outline:none}
+    .size-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.4);transition:transform 0.15s}
+    .size-row input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+    .size-val{font-size:13px;color:var(--text-muted);font-weight:500;min-width:28px;text-align:right;font-variant-numeric:tabular-nums}
+    .cta-section{padding:16px 20px}
+    .btn-cta{width:100%;padding:14px;background:#fff;color:#000;border:none;border-radius:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.2s;letter-spacing:0.3px}
+    .btn-cta:hover{background:#e8e8e8;transform:translateY(-1px);box-shadow:0 4px 12px rgba(255,255,255,0.08)}
+    .btn-cta:active{transform:translateY(0)}
+    .design-preview-area{display:flex;flex-direction:column;gap:12px}
+    .design-canvas-wrap{background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:20px;padding:12px;position:relative}
+    .design-canvas{background:#0e0e0e;border-radius:14px;width:100%;aspect-ratio:16/10;cursor:crosshair;display:block;touch-action:none}
+    .design-estimate{display:flex;justify-content:space-between;padding:14px 20px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px}
+    .estimate-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px}
+    .estimate-value{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-top:2px}
     .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
     .about-text p{color:var(--text-muted);margin-bottom:16px}
     .about-features{display:flex;gap:24px;flex-wrap:wrap;margin-top:32px}
@@ -157,7 +174,7 @@
     .cart-empty{text-align:center;padding:48px 0;color:var(--text-dim);font-size:14px}
     .add-to-cart-btn{position:absolute;bottom:12px;right:12px;padding:6px 14px;background:rgba(255,255,255,0.9);color:#000;border:none;border-radius:50px;font-size:11px;font-weight:600;cursor:pointer;opacity:0;transition:opacity 0.2s;font-family:inherit}
     .product-card:hover .add-to-cart-btn{opacity:1}
-    @media(max-width:768px){.nav-links{display:none}.about-grid,.design-grid{grid-template-columns:1fr}.gallery-grid,.reviews-grid{grid-template-columns:1fr}.process-grid{grid-template-columns:repeat(2,1fr)}.stats{gap:32px}.service-grid{grid-template-columns:1fr}.cart-drawer{width:100%;max-width:100%;right:-100%}}
+    @media(max-width:768px){.nav-links{display:none}.about-grid,.design-grid{grid-template-columns:1fr}.design-grid{gap:16px}.gallery-grid,.reviews-grid{grid-template-columns:1fr}.process-grid{grid-template-columns:repeat(2,1fr)}.stats{gap:32px}.service-grid{grid-template-columns:1fr}.cart-drawer{width:100%;max-width:100%;right:-100%}.design-preview-area{order:-1}}
   </style>
 </head>
 <body>
@@ -226,36 +243,41 @@
       <h2 class="section-title">CREATE YOUR <span class="accent">PIECE</span></h2>
       <div class="design-grid">
         <div class="design-controls">
-          <div class="mode-toggle">
-            <button class="mode-btn active" id="modeText" onclick="setMode('text')">Text</button>
-            <button class="mode-btn" id="modeUpload" onclick="setMode('upload')">Upload</button>
+          <div class="ctrl-section">
+            <div class="mode-toggle">
+              <button class="mode-btn active" id="modeText" onclick="setMode('text')">Text</button>
+              <button class="mode-btn" id="modeUpload" onclick="setMode('upload')">Upload</button>
+            </div>
           </div>
-          
+
           <div id="textControls">
-            <div class="control-card">
-              <label class="control-label">Your Text</label>
+            <div class="ctrl-section">
+              <label class="control-label">Text</label>
               <input type="text" class="control-input" id="designText" value="Bambeo" oninput="updateCanvas()">
             </div>
-            <div class="control-card">
-              <label class="control-label">Size: <span id="sizeValue">60</span></label>
-              <input type="range" min="30" max="100" value="60" style="width:100%" id="sizeSlider" oninput="updateSize(this.value)">
-            </div>
-          </div>
-          
-          <div id="uploadControls" style="display:none">
-            <div class="control-card">
-              <label class="control-label">Upload Your Design</label>
-              <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Upload a logo, sketch, or reference image</p>
-              <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
-              <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('imageUpload').click()">Choose Image</button>
-              <p id="uploadFileName" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center"></p>
-              <div class="canvas-actions" style="margin-top:12px">
-                <button class="btn btn-outline btn-sm" onclick="clearUpload()">Clear</button>
+            <div class="ctrl-section">
+              <label class="control-label">Size</label>
+              <div class="size-row">
+                <input type="range" min="30" max="100" value="60" id="sizeSlider" oninput="updateSize(this.value)">
+                <span class="size-val" id="sizeValue">60</span>
               </div>
             </div>
           </div>
-          
-          <div class="control-card">
+
+          <div id="uploadControls" style="display:none">
+            <div class="ctrl-section">
+              <label class="control-label">Reference Image</label>
+              <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
+              <div class="upload-zone" onclick="document.getElementById('imageUpload').click()">
+                <div class="upload-zone-icon">&#8682;</div>
+                <div class="upload-zone-text">Click to upload a logo, sketch, or reference</div>
+                <div class="upload-zone-name" id="uploadFileName"></div>
+              </div>
+              <div style="text-align:center"><button class="upload-clear" onclick="clearUpload()">Clear</button></div>
+            </div>
+          </div>
+
+          <div class="ctrl-section">
             <label class="control-label">Color</label>
             <div class="color-grid">
               <button class="color-btn active" style="background:var(--pink)" onclick="setColor('#ff66b2',this)"></button>
@@ -268,11 +290,13 @@
               <button class="color-btn" style="background:#fff5e6" onclick="setColor('#fff5e6',this)"></button>
             </div>
           </div>
-          
-          <button class="btn btn-primary" style="width:100%;padding:16px" onclick="openQuoteWithDesign()">Get Quote</button>
+
+          <div class="cta-section">
+            <button class="btn-cta" onclick="openQuoteWithDesign()">Get Quote →</button>
+          </div>
         </div>
-        
-        <div>
+
+        <div class="design-preview-area">
           <div class="design-canvas-wrap">
             <canvas id="designCanvas" class="design-canvas" width="800" height="500"></canvas>
           </div>
@@ -552,23 +576,21 @@
     }
 
     function updateCanvas() {
-      ctx.fillStyle = '#111';
+      // Subtle gradient background
+      var grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width*0.6);
+      grad.addColorStop(0, '#151518');
+      grad.addColorStop(1, '#0e0e10');
+      ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Grid
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.lineWidth = 1;
-      for (var x = 0; x < canvas.width; x += 40) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-      }
-      for (var y = 0; y < canvas.height; y += 40) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
+
+      // Subtle dot grid
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      for (var x = 20; x < canvas.width; x += 40) {
+        for (var y = 20; y < canvas.height; y += 40) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       
       // Uploaded image - only show in upload mode
