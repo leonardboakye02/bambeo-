@@ -253,7 +253,7 @@
           <div class="form-group"><label class="form-label">Color</label><input type="color" class="form-input" id="productColor" value="#ff66b2" style="height:44px;padding:4px"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Category</label><select class="form-input" id="productCategory"><option value="signs">Signs</option><option value="custom">Custom</option><option value="decor">Decor</option></select></div>
+          <div class="form-group"><label class="form-label">Collection / Category</label><input type="text" class="form-input" id="productCategory" placeholder="e.g. art, coffee, love, home" list="categoryList"><datalist id="categoryList"><option value="art"><option value="coffee"><option value="love"><option value="home"><option value="hello"><option value="open"><option value="signs"><option value="custom"><option value="decor"></datalist></div>
           <div class="form-group"><label class="form-label">Tag</label><select class="form-input" id="productTag"><option value="">None</option><option value="best">Bestseller</option><option value="new">New</option></select></div>
         </div>
         <div class="form-group"><label class="form-label">Image URL (optional)</label><input type="text" class="form-input" id="productImage" placeholder="https://..."></div>
@@ -661,7 +661,7 @@
       document.getElementById('productDisplayText').value = p?.display_text || '';
       document.getElementById('productPrice').value = p?.price || '';
       document.getElementById('productColor').value = p?.color || '#ff66b2';
-      document.getElementById('productCategory').value = p?.category || 'signs';
+      document.getElementById('productCategory').value = p?.category || '';
       document.getElementById('productTag').value = p?.tag || '';
       document.getElementById('productImage').value = p?.image_url || '';
       document.getElementById('productSort').value = p?.sort_order || 0;

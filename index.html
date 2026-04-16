@@ -127,14 +127,6 @@
     .design-preview{margin-bottom:20px;padding:12px;background:rgba(255,255,255,0.03);border-radius:12px}
     .design-preview img{width:100%;border-radius:8px}
     .design-preview p{text-align:center;font-size:12px;color:var(--text-dim);margin-top:8px}
-    .modal-catalog{background:#0d0d0d;border:1px solid var(--border);border-radius:20px;padding:0;width:100%;max-width:1100px;max-height:92vh;overflow-y:auto;position:relative}
-    .catalog-header{position:sticky;top:0;background:linear-gradient(180deg,#0d0d0d,rgba(13,13,13,0.95));padding:28px 32px 20px;border-bottom:1px solid var(--border);z-index:2;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
-    .catalog-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;line-height:1.1}
-    .catalog-subtitle{color:var(--text-dim);font-size:13px;margin-top:6px}
-    .catalog-body{padding:24px 32px 32px}
-    .catalog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-    .catalog-empty{text-align:center;color:var(--text-dim);font-size:14px;padding:48px 16px}
-    @media(max-width:768px){.catalog-grid{grid-template-columns:repeat(2,1fr);gap:12px}.catalog-header{padding:20px}.catalog-body{padding:16px 20px 24px}.catalog-title{font-size:22px}}
     /* CART */
     .cart-btn{position:relative;background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:4px 8px;transition:color 0.2s}
     .cart-btn:hover{color:var(--text)}
@@ -394,22 +386,6 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="catalogModal">
-    <div class="modal-catalog">
-      <div class="catalog-header">
-        <div>
-          <div class="section-label">Collection</div>
-          <div class="catalog-title" id="catalogTitle">Art Pieces</div>
-          <div class="catalog-subtitle" id="catalogSubtitle">Explore our collection</div>
-        </div>
-        <button class="modal-close" style="position:static" onclick="closeCatalog()">✕</button>
-      </div>
-      <div class="catalog-body">
-        <div class="catalog-grid" id="catalogGrid"></div>
-      </div>
-    </div>
-  </div>
-
   <script>
     var SUPABASE_URL = 'https://mlqcjkyupgayhbbdlttr.supabase.co';
     var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1scWNqa3l1cGdheWhiYmRsdHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjUzMDIsImV4cCI6MjA5MTI0MTMwMn0.LI3Lk7b1RgntGIEI0doBpZqcRuayN6Gti4ygFFfJ1vY';
@@ -500,33 +476,8 @@
         if (allProducts[i].id === productId) { clicked = allProducts[i]; break; }
       }
       if (!clicked) return;
-
-      // Build the collection: all products sharing the same category
-      var cat = clicked.category || 'all';
-      var collection = allProducts.filter(function(p) {
-        return (p.category || 'all') === cat;
-      });
-
-      var title = (clicked.display_text || clicked.name || 'Collection');
-      document.getElementById('catalogTitle').textContent = title + ' Collection';
-      document.getElementById('catalogSubtitle').textContent = collection.length + (collection.length === 1 ? ' piece' : ' pieces') + ' in this collection';
-
-      var grid = document.getElementById('catalogGrid');
-      if (!collection.length) {
-        grid.innerHTML = '<div class="catalog-empty">No pieces in this collection yet.</div>';
-      } else {
-        grid.innerHTML = collection.map(function(p) {
-          var safeId = esc(p.id);
-          var safeTag = (p.tag === 'best' || p.tag === 'new') ? p.tag : '';
-          return '<div class="product-card"><div class="product-image">' + (safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '') + '<span style="color:' + escColor(p.color) + '">' + esc(p.display_text || p.name) + '</span><button class="add-to-cart-btn" onclick="event.stopPropagation();addToCart(\'' + safeId + '\')">Add to Cart</button></div><div class="product-info"><div class="product-name">' + esc(p.name) + '</div><div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div></div></div>';
-        }).join('');
-      }
-
-      document.getElementById('catalogModal').className = 'modal-overlay open';
-    }
-
-    function closeCatalog() {
-      document.getElementById('catalogModal').className = 'modal-overlay';
+      var cat = clicked.category || '';
+      window.location.href = '/collection.html?cat=' + encodeURIComponent(cat);
     }
 
     function renderGallery(gallery) {
