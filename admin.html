@@ -169,8 +169,8 @@
         <div class="page-header"><h1 class="page-title">Products</h1><button class="btn btn-primary" onclick="openProductModal()">+ Add Product</button></div>
         <div class="card">
           <table class="data-table">
-            <thead><tr><th>Color</th><th>Name</th><th>Display Text</th><th>Price</th><th>Category</th><th>Tag</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="productsTable"><tr><td colspan="8" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
+            <thead><tr><th>Image</th><th>Color</th><th>Name</th><th>Display Text</th><th>Price</th><th>Category</th><th>Tag</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="productsTable"><tr><td colspan="9" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -180,8 +180,8 @@
         <div class="page-header"><h1 class="page-title">Gallery</h1><button class="btn btn-primary" onclick="openGalleryModal()">+ Add Item</button></div>
         <div class="card">
           <table class="data-table">
-            <thead><tr><th>Color</th><th>Title</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="galleryTable"><tr><td colspan="5" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
+            <thead><tr><th>Image</th><th>Color</th><th>Title</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="galleryTable"><tr><td colspan="6" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -256,7 +256,17 @@
           <div class="form-group"><label class="form-label">Collection / Category</label><input type="text" class="form-input" id="productCategory" placeholder="e.g. art, coffee, love, home" list="categoryList"><datalist id="categoryList"><option value="art"><option value="coffee"><option value="love"><option value="home"><option value="hello"><option value="open"><option value="signs"><option value="custom"><option value="decor"></datalist></div>
           <div class="form-group"><label class="form-label">Tag</label><select class="form-input" id="productTag"><option value="">None</option><option value="best">Bestseller</option><option value="new">New</option></select></div>
         </div>
-        <div class="form-group"><label class="form-label">Image URL (optional)</label><input type="text" class="form-input" id="productImage" placeholder="https://..."></div>
+        <div class="form-group">
+          <label class="form-label">Product Image</label>
+          <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+            <img id="productImagePreview" style="display:none;width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid #e5e5e5;background:#f5f5f5" alt="">
+            <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px">
+              <input type="text" class="form-input" id="productImage" placeholder="https://... or upload below" oninput="updateProductImagePreview()">
+              <input type="file" accept="image/*" id="productImageFile" onchange="handleProductImageFile(event)" style="font-size:13px">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="clearProductImage()" style="align-self:flex-start">Clear image</button>
+            </div>
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Sort Order</label><input type="number" class="form-input" id="productSort" value="0"></div>
           <div class="form-group"><label class="form-label">Status</label><select class="form-input" id="productActive"><option value="true">Active</option><option value="false">Inactive</option></select></div>
@@ -277,7 +287,17 @@
           <div class="form-group"><label class="form-label">Color</label><input type="color" class="form-input" id="galleryColor" value="#ff9966" style="height:44px;padding:4px"></div>
           <div class="form-group"><label class="form-label">Category</label><select class="form-input" id="galleryCategory"><option value="signs">Signs</option><option value="custom">Custom</option><option value="decor">Decor</option></select></div>
         </div>
-        <div class="form-group"><label class="form-label">Image URL (optional)</label><input type="text" class="form-input" id="galleryImage" placeholder="https://..."></div>
+        <div class="form-group">
+          <label class="form-label">Image</label>
+          <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+            <img id="galleryImagePreview" style="display:none;width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid #e5e5e5;background:#f5f5f5" alt="">
+            <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px">
+              <input type="text" class="form-input" id="galleryImage" placeholder="https://... or upload below" oninput="updateGalleryImagePreview()">
+              <input type="file" accept="image/*" id="galleryImageFile" onchange="handleGalleryImageFile(event)" style="font-size:13px">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="clearGalleryImage()" style="align-self:flex-start">Clear image</button>
+            </div>
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Sort Order</label><input type="number" class="form-input" id="gallerySort" value="0"></div>
           <div class="form-group"><label class="form-label">Status</label><select class="form-input" id="galleryActive"><option value="true">Active</option><option value="false">Inactive</option></select></div>
@@ -639,8 +659,11 @@
       tbody.innerHTML = data.map(p => {
         window._adminProducts[p.id] = p;
         var safeTag = (p.tag === 'best' || p.tag === 'new') ? p.tag : '';
+        var validImg = p.image_url && /^(https?:|data:image\/)/i.test(p.image_url) ? esc(p.image_url) : '';
+        var thumb = validImg ? `<img src="${validImg}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid #e5e5e5">` : '<span style="display:inline-block;width:40px;height:40px;border-radius:6px;background:#f3f3f3;border:1px dashed #d1d5db"></span>';
         return `
         <tr>
+          <td>${thumb}</td>
           <td><span class="color-swatch" style="background:${escColor(p.color)}"></span></td>
           <td>${esc(p.name)}</td>
           <td>${esc(p.display_text || '-')}</td>
@@ -668,7 +691,34 @@
       document.getElementById('productImage').value = p?.image_url || '';
       document.getElementById('productSort').value = p?.sort_order || 0;
       document.getElementById('productActive').value = p?.is_active !== false ? 'true' : 'false';
+      document.getElementById('productImageFile').value = '';
+      updateProductImagePreview();
       document.getElementById('productModal').classList.add('open');
+    }
+
+    function updateProductImagePreview() {
+      const img = document.getElementById('productImagePreview');
+      const url = document.getElementById('productImage').value;
+      if (url) { img.src = url; img.style.display = 'block'; }
+      else { img.removeAttribute('src'); img.style.display = 'none'; }
+    }
+
+    function handleProductImageFile(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { showToast('Image too large (max 2MB)', 'error'); e.target.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        document.getElementById('productImage').value = ev.target.result;
+        updateProductImagePreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearProductImage() {
+      document.getElementById('productImage').value = '';
+      document.getElementById('productImageFile').value = '';
+      updateProductImagePreview();
     }
     function closeProductModal() { document.getElementById('productModal').classList.remove('open'); }
     function editProduct(p) { openProductModal(p); }
@@ -708,12 +758,16 @@
       const { data, error } = await supabase.from('gallery').select('*');
       if (error) return showToast('Error loading gallery', 'error');
       const tbody = document.getElementById('galleryTable');
-      if (!data?.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No gallery items yet</td></tr>'; return; }
+      if (!data?.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No gallery items yet</td></tr>'; return; }
       data.sort((a, b) => (a.sort_order||0) - (b.sort_order||0));
       window._adminGallery = {};
       data.forEach(g => { window._adminGallery[g.id] = g; });
-      tbody.innerHTML = data.map(g => `
+      tbody.innerHTML = data.map(g => {
+        var validImg = g.image_url && /^(https?:|data:image\/)/i.test(g.image_url) ? esc(g.image_url) : '';
+        var thumb = validImg ? `<img src="${validImg}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid #e5e5e5">` : '<span style="display:inline-block;width:40px;height:40px;border-radius:6px;background:#f3f3f3;border:1px dashed #d1d5db"></span>';
+        return `
         <tr>
+          <td>${thumb}</td>
           <td><span class="color-swatch" style="background:${escColor(g.color)}"></span></td>
           <td>${esc(g.title)}</td>
           <td>${esc(g.category || '-')}</td>
@@ -722,8 +776,8 @@
             <button class="btn btn-ghost btn-sm" onclick="editGallery(window._adminGallery['${esc(g.id)}'])">Edit</button>
             <button class="btn btn-danger btn-sm" onclick="deleteGallery('${esc(g.id)}')">Delete</button>
           </td>
-        </tr>
-      `).join('');
+        </tr>`;
+      }).join('');
     }
 
     function openGalleryModal(g = null) {
@@ -735,7 +789,34 @@
       document.getElementById('galleryImage').value = g?.image_url || '';
       document.getElementById('gallerySort').value = g?.sort_order || 0;
       document.getElementById('galleryActive').value = g?.is_active !== false ? 'true' : 'false';
+      document.getElementById('galleryImageFile').value = '';
+      updateGalleryImagePreview();
       document.getElementById('galleryModal').classList.add('open');
+    }
+
+    function updateGalleryImagePreview() {
+      const img = document.getElementById('galleryImagePreview');
+      const url = document.getElementById('galleryImage').value;
+      if (url) { img.src = url; img.style.display = 'block'; }
+      else { img.removeAttribute('src'); img.style.display = 'none'; }
+    }
+
+    function handleGalleryImageFile(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { showToast('Image too large (max 2MB)', 'error'); e.target.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        document.getElementById('galleryImage').value = ev.target.result;
+        updateGalleryImagePreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearGalleryImage() {
+      document.getElementById('galleryImage').value = '';
+      document.getElementById('galleryImageFile').value = '';
+      updateGalleryImagePreview();
     }
     function closeGalleryModal() { document.getElementById('galleryModal').classList.remove('open'); }
     function editGallery(g) { openGalleryModal(g); }

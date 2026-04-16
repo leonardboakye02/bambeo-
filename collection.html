@@ -179,7 +179,10 @@
       container.innerHTML = '<div class="products-grid">' + filtered.map(function(p) {
         var safeId = esc(p.id);
         var safeTag = (p.tag === 'best' || p.tag === 'new') ? p.tag : '';
-        return '<div class="product-card"><div class="product-image">' + (safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '') + '<span style="color:' + escColor(p.color) + '">' + esc(p.display_text || p.name) + '</span><button class="add-to-cart-btn" onclick="addToCart(\'' + safeId + '\')">Add to Cart</button></div><div class="product-info"><div class="product-name">' + esc(p.name) + '</div><div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div></div></div>';
+        var imgUrl = p.image_url && /^(https?:|data:image\/)/i.test(p.image_url) ? p.image_url : '';
+        var imageBg = imgUrl ? ' style="background-image:url(\'' + esc(imgUrl) + '\');background-size:cover;background-position:center;padding:0"' : '';
+        var labelHtml = imgUrl ? '' : '<span style="color:' + escColor(p.color) + '">' + esc(p.display_text || p.name) + '</span>';
+        return '<div class="product-card"><div class="product-image"' + imageBg + '>' + (safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '') + labelHtml + '<button class="add-to-cart-btn" onclick="addToCart(\'' + safeId + '\')">Add to Cart</button></div><div class="product-info"><div class="product-name">' + esc(p.name) + '</div><div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div></div></div>';
       }).join('') + '</div>';
     }
 
