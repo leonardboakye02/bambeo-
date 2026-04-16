@@ -77,6 +77,29 @@
     .cart-empty{text-align:center;padding:48px 0;color:var(--text-dim);font-size:14px}
 
     @media(max-width:768px){.nav-links{display:none}.cart-drawer{width:100%;max-width:100%;right:-100%}}
+
+    /* Admin inline edit */
+    .admin-edit-btn{position:absolute;top:12px;right:12px;padding:6px 12px;background:#fff;color:#000;border:none;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;z-index:2}
+    .admin-edit-btn:hover{background:#eee}
+    .admin-delete-btn{position:absolute;top:12px;right:72px;padding:6px 10px;background:rgba(255,102,128,0.9);color:#fff;border:none;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;z-index:2}
+    .admin-add-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#fff;color:#000;border:none;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:12px}
+    .admin-badge{display:inline-block;padding:4px 10px;background:rgba(102,217,255,0.15);color:var(--blue);border:1px solid rgba(102,217,255,0.3);border-radius:50px;font-size:11px;font-weight:600;margin-bottom:12px}
+    .admin-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+    .admin-modal-overlay.open{display:flex}
+    .admin-modal{background:#141414;border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;color:#fff}
+    .admin-modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--border)}
+    .admin-modal-header h3{font-family:'Syne',sans-serif;font-size:18px}
+    .admin-modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+    .admin-modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+    .admin-field label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:500}
+    .admin-field input,.admin-field select,.admin-field textarea{width:100%;padding:10px 12px;background:#1c1c1c;border:1px solid var(--border);border-radius:8px;color:#fff;font-size:14px;font-family:inherit}
+    .admin-field input[type=color]{height:40px;padding:4px}
+    .admin-field input[type=file]{padding:6px;font-size:12px}
+    .admin-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .admin-preview{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:#1c1c1c;display:none}
+    .btn-admin{padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border:none}
+    .btn-admin-primary{background:#fff;color:#000}
+    .btn-admin-ghost{background:transparent;color:#fff;border:1px solid var(--border)}
   </style>
 </head>
 <body>
@@ -112,6 +135,10 @@
       <div class="section-label">Collection</div>
       <h1 class="collection-title" id="collectionTitle">Loading...</h1>
       <p class="collection-subtitle" id="collectionSubtitle">Curated pieces from this collection</p>
+      <div id="adminToolbar" style="display:none;margin-top:16px">
+        <span class="admin-badge">Admin mode</span>
+        <div><button class="admin-add-btn" onclick="openAdminEdit(null)">+ Add Product to this Collection</button></div>
+      </div>
     </div>
   </section>
 
@@ -122,6 +149,48 @@
       </div>
     </div>
   </section>
+
+  <!-- Admin Edit Modal -->
+  <div class="admin-modal-overlay" id="adminEditModal">
+    <div class="admin-modal">
+      <div class="admin-modal-header">
+        <h3 id="adminEditTitle">Edit Product</h3>
+        <button class="cart-close" onclick="closeAdminEdit()">&times;</button>
+      </div>
+      <div class="admin-modal-body">
+        <input type="hidden" id="aeId">
+        <div class="admin-field"><label>Product Name</label><input type="text" id="aeName" placeholder="e.g., Good Vibes Sign"></div>
+        <div class="admin-field"><label>Display Text</label><input type="text" id="aeDisplayText" placeholder="e.g., Good Vibes"></div>
+        <div class="admin-row">
+          <div class="admin-field"><label>Price ($)</label><input type="number" id="aePrice" placeholder="149"></div>
+          <div class="admin-field"><label>Color</label><input type="color" id="aeColor" value="#ff66b2"></div>
+        </div>
+        <div class="admin-row">
+          <div class="admin-field"><label>Category</label><input type="text" id="aeCategory" placeholder="art, coffee, love..."></div>
+          <div class="admin-field"><label>Tag</label><select id="aeTag"><option value="">None</option><option value="best">Bestseller</option><option value="new">New</option></select></div>
+        </div>
+        <div class="admin-field">
+          <label>Product Image</label>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <img id="aeImagePreview" class="admin-preview" alt="">
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+              <input type="text" id="aeImage" placeholder="https://... or upload below" oninput="aeUpdatePreview()">
+              <input type="file" id="aeImageFile" accept="image/*" onchange="aeHandleFile(event)">
+              <button type="button" class="btn-admin btn-admin-ghost" style="align-self:flex-start" onclick="aeClearImage()">Clear image</button>
+            </div>
+          </div>
+        </div>
+        <div class="admin-row">
+          <div class="admin-field"><label>Sort Order</label><input type="number" id="aeSort" value="0"></div>
+          <div class="admin-field"><label>Status</label><select id="aeActive"><option value="true">Active</option><option value="false">Inactive</option></select></div>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button class="btn-admin btn-admin-ghost" onclick="closeAdminEdit()">Cancel</button>
+        <button class="btn-admin btn-admin-primary" onclick="saveAdminEdit()">Save</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     var SUPABASE_URL = 'https://mlqcjkyupgayhbbdlttr.supabase.co';
@@ -147,6 +216,8 @@
 
     var allProducts = [];
     var cart = JSON.parse(localStorage.getItem('bambeo_cart') || '[]');
+    var ADMIN_PW = sessionStorage.getItem('bambeo_admin_pw') || '';
+    var isAdmin = !!ADMIN_PW;
 
     function fetchFromSupabase(table) {
       return fetch(SUPABASE_URL + '/rest/v1/' + table + '?select=*', {
@@ -182,7 +253,10 @@
         var imgUrl = p.image_url && /^(https?:|data:image\/)/i.test(p.image_url) ? p.image_url : '';
         var imageBg = imgUrl ? ' style="background-image:url(\'' + esc(imgUrl) + '\');background-size:cover;background-position:center;padding:0"' : '';
         var labelHtml = imgUrl ? '' : '<span style="color:' + escColor(p.color) + '">' + esc(p.display_text || p.name) + '</span>';
-        return '<div class="product-card"><div class="product-image"' + imageBg + '>' + (safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '') + labelHtml + '<button class="add-to-cart-btn" onclick="addToCart(\'' + safeId + '\')">Add to Cart</button></div><div class="product-info"><div class="product-name">' + esc(p.name) + '</div><div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div></div></div>';
+        var adminCtrls = isAdmin
+          ? '<button class="admin-delete-btn" onclick="adminDelete(\'' + safeId + '\')">Delete</button><button class="admin-edit-btn" onclick="openAdminEdit(\'' + safeId + '\')">Edit</button>'
+          : '<button class="add-to-cart-btn" onclick="addToCart(\'' + safeId + '\')">Add to Cart</button>';
+        return '<div class="product-card"><div class="product-image"' + imageBg + '>' + (safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '') + labelHtml + adminCtrls + '</div><div class="product-info"><div class="product-name">' + esc(p.name) + '</div><div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div></div></div>';
       }).join('') + '</div>';
     }
 
@@ -274,13 +348,126 @@
       .catch(function() { alert('Error connecting to payment.'); });
     }
 
-    // Init
-    fetchFromSupabase('products').then(function(products) {
-      if (Array.isArray(products)) {
-        allProducts = products.filter(function(p) { return p.is_active !== false; });
+    // ========== ADMIN FUNCTIONS ==========
+    function adminApi(body) {
+      return fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ADMIN_PW },
+        body: JSON.stringify(body)
+      }).then(function(r) { return r.json(); });
+    }
+
+    function loadProducts() {
+      if (isAdmin) {
+        // Admin sees all (active + inactive) via admin API
+        adminApi({ table: 'products', action: 'select', data: { select: '*' } }).then(function(res) {
+          var data = res && res.data ? res.data : (Array.isArray(res) ? res : []);
+          allProducts = Array.isArray(data) ? data : [];
+          renderCollection();
+        }).catch(function() {
+          // Fallback: anon read
+          fetchFromSupabase('products').then(function(p) {
+            allProducts = Array.isArray(p) ? p.filter(function(x){return x.is_active!==false;}) : [];
+            renderCollection();
+          });
+        });
+      } else {
+        fetchFromSupabase('products').then(function(products) {
+          allProducts = Array.isArray(products) ? products.filter(function(p){return p.is_active!==false;}) : [];
+          renderCollection();
+        });
       }
-      renderCollection();
-    });
+    }
+
+    function openAdminEdit(productId) {
+      var p = null;
+      if (productId) {
+        for (var i = 0; i < allProducts.length; i++) {
+          if (allProducts[i].id === productId) { p = allProducts[i]; break; }
+        }
+      }
+      document.getElementById('adminEditTitle').textContent = p ? 'Edit Product' : 'Add Product';
+      document.getElementById('aeId').value = p ? p.id : '';
+      document.getElementById('aeName').value = p ? (p.name || '') : '';
+      document.getElementById('aeDisplayText').value = p ? (p.display_text || '') : '';
+      document.getElementById('aePrice').value = p ? (p.price || '') : '';
+      document.getElementById('aeColor').value = p && p.color ? p.color : '#ff66b2';
+      document.getElementById('aeCategory').value = p ? (p.category || getCategoryParam()) : getCategoryParam();
+      document.getElementById('aeTag').value = p ? (p.tag || '') : '';
+      document.getElementById('aeImage').value = p ? (p.image_url || '') : '';
+      document.getElementById('aeSort').value = p ? (p.sort_order || 0) : 0;
+      document.getElementById('aeActive').value = (p && p.is_active === false) ? 'false' : 'true';
+      document.getElementById('aeImageFile').value = '';
+      aeUpdatePreview();
+      document.getElementById('adminEditModal').classList.add('open');
+    }
+
+    function closeAdminEdit() {
+      document.getElementById('adminEditModal').classList.remove('open');
+    }
+
+    function aeUpdatePreview() {
+      var img = document.getElementById('aeImagePreview');
+      var url = document.getElementById('aeImage').value;
+      if (url) { img.src = url; img.style.display = 'block'; }
+      else { img.removeAttribute('src'); img.style.display = 'none'; }
+    }
+
+    function aeHandleFile(e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { alert('Image too large (max 2MB)'); e.target.value = ''; return; }
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        document.getElementById('aeImage').value = ev.target.result;
+        aeUpdatePreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function aeClearImage() {
+      document.getElementById('aeImage').value = '';
+      document.getElementById('aeImageFile').value = '';
+      aeUpdatePreview();
+    }
+
+    function saveAdminEdit() {
+      var id = document.getElementById('aeId').value;
+      var name = document.getElementById('aeName').value.trim();
+      if (!name) { alert('Name is required'); return; }
+      var priceVal = parseFloat(document.getElementById('aePrice').value);
+      var row = {
+        name: name,
+        display_text: document.getElementById('aeDisplayText').value || null,
+        price: isNaN(priceVal) ? 0 : priceVal,
+        color: document.getElementById('aeColor').value,
+        category: document.getElementById('aeCategory').value || null,
+        tag: document.getElementById('aeTag').value || null,
+        image_url: document.getElementById('aeImage').value || null,
+        sort_order: parseInt(document.getElementById('aeSort').value, 10) || 0,
+        is_active: document.getElementById('aeActive').value === 'true'
+      };
+      var req = id
+        ? adminApi({ table: 'products', action: 'update', data: { rows: row }, filters: { id: id } })
+        : adminApi({ table: 'products', action: 'insert', data: { rows: row } });
+      req.then(function(res) {
+        if (res && res.error) { alert('Save failed: ' + (res.error.message || res.error)); return; }
+        closeAdminEdit();
+        loadProducts();
+      }).catch(function() { alert('Save failed'); });
+    }
+
+    function adminDelete(id) {
+      if (!confirm('Delete this product?')) return;
+      adminApi({ table: 'products', action: 'delete', filters: { id: id } }).then(function(res) {
+        if (res && res.error) { alert('Delete failed'); return; }
+        loadProducts();
+      }).catch(function() { alert('Delete failed'); });
+    }
+
+    // Init
+    if (isAdmin) document.getElementById('adminToolbar').style.display = 'block';
+    loadProducts();
     updateCartUI();
   </script>
 </body>
