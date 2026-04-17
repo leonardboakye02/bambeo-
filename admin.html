@@ -741,19 +741,13 @@
         const safeCat = esc(cat);
         const safeName = esc(p.name || 'Untitled');
         const safeId = esc(p.id);
-        const meta = cat
-          ? `in <b>${safeCat}</b>`
-          : '<span style="color:#c55">no category</span>';
         const editBtn = cat
           ? `<button class="btn btn-primary btn-sm" onclick="openPanelDetail('${safeCat}')">Edit</button>`
           : `<button class="btn btn-primary btn-sm" onclick="editProduct(window._adminProducts['${safeId}'])">Edit</button>`;
         return `
           <div class="panel-card">
             <div class="panel-swatch">${swatch}</div>
-            <div>
-              <div class="panel-name">${safeName}</div>
-              <div class="panel-meta">${meta}</div>
-            </div>
+            <div class="panel-name">${safeName}</div>
             <div class="panel-actions">
               ${editBtn}
               <button class="btn btn-danger btn-sm" onclick="deleteProduct('${safeId}')">Delete</button>
@@ -770,10 +764,7 @@
         return `
           <div class="panel-card">
             <div class="panel-swatch"><div style="display:flex;align-items:center;justify-content:center;height:100%;color:#99a;font-size:28px;text-transform:uppercase;font-weight:700">${esc(cat.charAt(0))}</div></div>
-            <div>
-              <div class="panel-name" style="text-transform:capitalize">${safe}</div>
-              <div class="panel-meta">empty panel</div>
-            </div>
+            <div class="panel-name" style="text-transform:capitalize">${safe}</div>
             <div class="panel-actions">
               <button class="btn btn-primary btn-sm" onclick="openPanelDetail('${safe}')">Edit</button>
               <button class="btn btn-danger btn-sm" onclick="deletePanel('${safe}')">Delete</button>
