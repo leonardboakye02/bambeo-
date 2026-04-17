@@ -164,6 +164,14 @@
       <!-- Products -->
       <div class="page-section" id="page-products">
         <div class="page-header"><h1 class="page-title">Products</h1><button class="btn btn-primary" onclick="openProductModal()">+ Add Product</button></div>
+        <div class="card" style="margin-bottom:16px;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <label class="form-label" style="margin:0">Filter by category:</label>
+          <select class="form-input" id="productCategoryFilter" style="max-width:240px" onchange="renderProductsTable()">
+            <option value="">All categories</option>
+          </select>
+          <input type="text" class="form-input" id="productSearchFilter" placeholder="Search name or description..." style="max-width:280px" oninput="renderProductsTable()">
+          <span id="productFilterCount" style="color:var(--text-muted);font-size:13px;margin-left:auto"></span>
+        </div>
         <div class="card">
           <table class="data-table">
             <thead><tr><th>Image</th><th>Color</th><th>Name</th><th>Display Text</th><th>Price</th><th>Category</th><th>Tag</th><th>Status</th><th>Actions</th></tr></thead>
@@ -243,15 +251,23 @@
           <div class="form-group"><label class="form-label">Tag</label><select class="form-input" id="productTag"><option value="">None</option><option value="best">Bestseller</option><option value="new">New</option></select></div>
         </div>
         <div class="form-group">
-          <label class="form-label">Product Image</label>
-          <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
-            <img id="productImagePreview" style="display:none;width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid #e5e5e5;background:#f5f5f5" alt="">
-            <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px">
-              <input type="text" class="form-input" id="productImage" placeholder="https://... or upload below" oninput="updateProductImagePreview()">
-              <input type="file" accept="image/*" id="productImageFile" onchange="handleProductImageFile(event)" style="font-size:13px">
-              <button type="button" class="btn btn-ghost btn-sm" onclick="clearProductImage()" style="align-self:flex-start">Clear image</button>
-            </div>
+          <label class="form-label">Description</label>
+          <textarea class="form-input" id="productDescription" rows="3" placeholder="Short description shown on the product card..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Product Images <span style="color:var(--text-muted);font-weight:400">(first is primary, drag files below or paste URL)</span></label>
+          <div id="productImageDropzone" style="border:2px dashed #d1d5db;border-radius:10px;padding:14px;text-align:center;color:var(--text-muted);font-size:13px;cursor:pointer;margin-bottom:8px" ondragover="imgDragOver(event)" ondragleave="imgDragLeave(event)" ondrop="imgDrop(event)" onclick="document.getElementById('productImageFile').click()">
+            Drop images here or click to upload · JPG/PNG, max 2MB each
           </div>
+          <input type="file" accept="image/*" id="productImageFile" multiple onchange="handleProductImageFiles(event)" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input type="text" class="form-input" id="productImageUrlInput" placeholder="...or paste image URL and press Add" style="flex:1">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="addImageUrlFromInput()">Add URL</button>
+          </div>
+          <div id="productImagesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px"></div>
+          <input type="hidden" id="productImages">
+          <!-- legacy single image field kept hidden for compat -->
+          <input type="hidden" id="productImage">
         </div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Sort Order</label><input type="number" class="form-input" id="productSort" value="0"></div>
@@ -599,20 +615,69 @@
       loadDashboard();
     }
 
-    // PRODUCTS
+    // ========== PRODUCTS ==========
+    // Data layer: window._adminProducts holds the last full list from Supabase.
+    // UI rendering reads from there and applies category + search filters client-side.
+
+    const VALID_IMG = /^(https?:|data:image\/)/i;
+    let productImagesDraft = []; // Array of image URLs being edited in the modal
+
+    function normalizeImages(p) {
+      // Accepts either JSONB image_urls (array) or legacy image_url (string).
+      if (!p) return [];
+      let arr = [];
+      if (Array.isArray(p.image_urls)) arr = p.image_urls.slice();
+      else if (typeof p.image_urls === 'string') {
+        try { const parsed = JSON.parse(p.image_urls); if (Array.isArray(parsed)) arr = parsed; } catch (e) {}
+      }
+      if (!arr.length && p.image_url) arr = [p.image_url];
+      return arr.filter(u => u && VALID_IMG.test(u));
+    }
+
     async function loadProducts() {
       const { data, error } = await supabase.from('products').select('*');
       if (error) return showToast('Error loading products', 'error');
-      const tbody = document.getElementById('productsTable');
-      if (!data?.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No products yet</td></tr>'; return; }
-      data.sort((a, b) => (a.sort_order||0) - (b.sort_order||0));
-      // Store for edit lookups instead of inline JSON
       window._adminProducts = {};
-      tbody.innerHTML = data.map(p => {
-        window._adminProducts[p.id] = p;
-        var safeTag = (p.tag === 'best' || p.tag === 'new') ? p.tag : '';
-        var validImg = p.image_url && /^(https?:|data:image\/)/i.test(p.image_url) ? esc(p.image_url) : '';
-        var thumb = validImg ? `<img src="${validImg}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid #e5e5e5">` : '<span style="display:inline-block;width:40px;height:40px;border-radius:6px;background:#f3f3f3;border:1px dashed #d1d5db"></span>';
+      (data || []).forEach(p => { window._adminProducts[p.id] = p; });
+      // Populate category filter dropdown with unique categories
+      const cats = Array.from(new Set((data || []).map(p => p.category).filter(Boolean))).sort();
+      const select = document.getElementById('productCategoryFilter');
+      if (select) {
+        const current = select.value;
+        select.innerHTML = '<option value="">All categories</option>' +
+          cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        if (cats.includes(current)) select.value = current;
+      }
+      renderProductsTable();
+    }
+
+    function renderProductsTable() {
+      const tbody = document.getElementById('productsTable');
+      const cat = (document.getElementById('productCategoryFilter')?.value || '').toLowerCase();
+      const q = (document.getElementById('productSearchFilter')?.value || '').toLowerCase().trim();
+      const all = Object.values(window._adminProducts || {});
+      const filtered = all.filter(p => {
+        if (cat && (p.category || '').toLowerCase() !== cat) return false;
+        if (q) {
+          const hay = ((p.name || '') + ' ' + (p.display_text || '') + ' ' + (p.description || '')).toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      }).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      const countEl = document.getElementById('productFilterCount');
+      if (countEl) countEl.textContent = filtered.length + ' of ' + all.length;
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No products match</td></tr>';
+        return;
+      }
+      tbody.innerHTML = filtered.map(p => {
+        const safeTag = (p.tag === 'best' || p.tag === 'new') ? p.tag : '';
+        const imgs = normalizeImages(p);
+        const primary = imgs[0] ? esc(imgs[0]) : '';
+        const countBadge = imgs.length > 1 ? `<span style="display:inline-block;margin-left:4px;padding:2px 6px;background:#eef;color:#335;border-radius:10px;font-size:10px;font-weight:600">+${imgs.length - 1}</span>` : '';
+        const thumb = primary
+          ? `<img src="${primary}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid #e5e5e5">${countBadge}`
+          : '<span style="display:inline-block;width:40px;height:40px;border-radius:6px;background:#f3f3f3;border:1px dashed #d1d5db"></span>';
         return `
         <tr>
           <td>${thumb}</td>
@@ -631,6 +696,7 @@
       }).join('');
     }
 
+    // ---- Product modal: multi-image handling ----
     function openProductModal(p = null) {
       document.getElementById('productModalTitle').textContent = p ? 'Edit Product' : 'Add Product';
       document.getElementById('productId').value = p?.id || '';
@@ -640,52 +706,107 @@
       document.getElementById('productColor').value = p?.color || '#ff66b2';
       document.getElementById('productCategory').value = p?.category || '';
       document.getElementById('productTag').value = p?.tag || '';
-      document.getElementById('productImage').value = p?.image_url || '';
+      document.getElementById('productDescription').value = p?.description || '';
       document.getElementById('productSort').value = p?.sort_order || 0;
       document.getElementById('productActive').value = p?.is_active !== false ? 'true' : 'false';
       document.getElementById('productImageFile').value = '';
-      updateProductImagePreview();
+      document.getElementById('productImageUrlInput').value = '';
+      productImagesDraft = normalizeImages(p);
+      renderProductImagesGrid();
       document.getElementById('productModal').classList.add('open');
     }
 
-    function updateProductImagePreview() {
-      const img = document.getElementById('productImagePreview');
-      const url = document.getElementById('productImage').value;
-      if (url) { img.src = url; img.style.display = 'block'; }
-      else { img.removeAttribute('src'); img.style.display = 'none'; }
+    function renderProductImagesGrid() {
+      const grid = document.getElementById('productImagesGrid');
+      if (!productImagesDraft.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;padding:4px 0">No images yet</div>';
+      } else {
+        grid.innerHTML = productImagesDraft.map((url, i) => `
+          <div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;background:#f5f5f5">
+            <img src="${esc(url)}" alt="" style="width:100%;height:100%;object-fit:cover">
+            ${i === 0 ? '<span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.75);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:600">PRIMARY</span>' : ''}
+            <button type="button" onclick="removeProductImage(${i})" title="Remove" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,0.75);color:#fff;cursor:pointer;font-size:12px;line-height:1">×</button>
+            ${i > 0 ? `<button type="button" onclick="promoteProductImage(${i})" title="Make primary" style="position:absolute;top:4px;left:4px;padding:2px 6px;border-radius:10px;border:none;background:rgba(255,255,255,0.92);color:#000;cursor:pointer;font-size:10px;font-weight:600">Set primary</button>` : ''}
+          </div>
+        `).join('');
+      }
+      // Keep hidden fields in sync for save
+      document.getElementById('productImages').value = JSON.stringify(productImagesDraft);
+      document.getElementById('productImage').value = productImagesDraft[0] || '';
     }
 
-    function handleProductImageFile(e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      if (file.size > 2 * 1024 * 1024) { showToast('Image too large (max 2MB)', 'error'); e.target.value = ''; return; }
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        document.getElementById('productImage').value = ev.target.result;
-        updateProductImagePreview();
-      };
-      reader.readAsDataURL(file);
+    function addImageUrlFromInput() {
+      const input = document.getElementById('productImageUrlInput');
+      const url = (input.value || '').trim();
+      if (!url) return;
+      if (!VALID_IMG.test(url)) { showToast('Only http(s) or data:image URLs allowed', 'error'); return; }
+      productImagesDraft.push(url);
+      input.value = '';
+      renderProductImagesGrid();
     }
 
-    function clearProductImage() {
-      document.getElementById('productImage').value = '';
-      document.getElementById('productImageFile').value = '';
-      updateProductImagePreview();
+    function removeProductImage(i) {
+      productImagesDraft.splice(i, 1);
+      renderProductImagesGrid();
     }
+
+    function promoteProductImage(i) {
+      if (i <= 0 || i >= productImagesDraft.length) return;
+      const [item] = productImagesDraft.splice(i, 1);
+      productImagesDraft.unshift(item);
+      renderProductImagesGrid();
+    }
+
+    async function handleProductImageFiles(e) {
+      await ingestImageFiles(Array.from(e.target.files || []));
+      e.target.value = '';
+    }
+
+    async function ingestImageFiles(files) {
+      for (const f of files) {
+        if (!f.type || !f.type.startsWith('image/')) continue;
+        if (f.size > 2 * 1024 * 1024) { showToast('"' + f.name + '" exceeds 2MB, skipped', 'error'); continue; }
+        try {
+          const dataUrl = await new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = reject;
+            r.readAsDataURL(f);
+          });
+          productImagesDraft.push(dataUrl);
+        } catch (err) { console.warn('file read failed', err); }
+      }
+      renderProductImagesGrid();
+    }
+
+    function imgDragOver(e) { e.preventDefault(); e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.background = '#eef'; }
+    function imgDragLeave(e) { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = ''; }
+    function imgDrop(e) {
+      e.preventDefault();
+      imgDragLeave(e);
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (files.length) ingestImageFiles(files);
+    }
+
     function closeProductModal() { document.getElementById('productModal').classList.remove('open'); }
     function editProduct(p) { openProductModal(p); }
 
     async function saveProduct() {
       const id = document.getElementById('productId').value;
+      const name = document.getElementById('productName').value.trim();
+      if (!name) { showToast('Name is required', 'error'); return; }
+      const images = productImagesDraft.slice();
       const data = {
-        name: document.getElementById('productName').value,
-        display_text: document.getElementById('productDisplayText').value,
-        price: parseFloat(document.getElementById('productPrice').value),
+        name: name,
+        display_text: document.getElementById('productDisplayText').value || null,
+        price: parseFloat(document.getElementById('productPrice').value) || 0,
         color: document.getElementById('productColor').value,
-        category: document.getElementById('productCategory').value,
+        category: document.getElementById('productCategory').value || null,
         tag: document.getElementById('productTag').value || null,
-        image_url: document.getElementById('productImage').value || null,
-        sort_order: parseInt(document.getElementById('productSort').value),
+        description: document.getElementById('productDescription').value || null,
+        image_urls: images,
+        image_url: images[0] || null,
+        sort_order: parseInt(document.getElementById('productSort').value, 10) || 0,
         is_active: document.getElementById('productActive').value === 'true'
       };
       let result;

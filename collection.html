@@ -78,6 +78,15 @@
 
     @media(max-width:768px){.nav-links{display:none}.cart-drawer{width:100%;max-width:100%;right:-100%}}
 
+    /* Product card description & search */
+    .product-desc{font-size:12px;color:var(--text-muted);margin-top:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .search-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;align-items:center}
+    .search-input{flex:1;min-width:220px;padding:12px 16px;background:var(--glass);border:1px solid var(--border);border-radius:50px;color:#fff;font-family:inherit;font-size:14px}
+    .search-input:focus{outline:none;border-color:rgba(255,255,255,0.25)}
+    .img-dots{position:absolute;bottom:10px;left:0;right:0;display:flex;gap:4px;justify-content:center;pointer-events:none}
+    .img-dots span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.45)}
+    .img-dots span.active{background:#fff}
+
     /* Admin inline edit */
     .admin-edit-btn{position:absolute;top:12px;right:12px;padding:6px 12px;background:#fff;color:#000;border:none;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;z-index:2}
     .admin-edit-btn:hover{background:#eee}
@@ -144,6 +153,9 @@
 
   <section>
     <div class="container">
+      <div class="search-row">
+        <input type="text" class="search-input" id="productSearch" placeholder="Search products..." oninput="renderCollection()">
+      </div>
       <div id="productsContainer">
         <div class="loader">Loading collection...</div>
       </div>
@@ -170,15 +182,22 @@
           <div class="admin-field"><label>Tag</label><select id="aeTag"><option value="">None</option><option value="best">Bestseller</option><option value="new">New</option></select></div>
         </div>
         <div class="admin-field">
-          <label>Product Image</label>
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <img id="aeImagePreview" class="admin-preview" alt="">
-            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-              <input type="text" id="aeImage" placeholder="https://... or upload below" oninput="aeUpdatePreview()">
-              <input type="file" id="aeImageFile" accept="image/*" onchange="aeHandleFile(event)">
-              <button type="button" class="btn-admin btn-admin-ghost" style="align-self:flex-start" onclick="aeClearImage()">Clear image</button>
-            </div>
+          <label>Description</label>
+          <textarea id="aeDescription" rows="3" placeholder="Short description shown on the product card..."></textarea>
+        </div>
+        <div class="admin-field">
+          <label>Images (first is primary · drop or click below)</label>
+          <div id="aeDropzone" style="border:2px dashed rgba(255,255,255,0.2);border-radius:10px;padding:14px;text-align:center;color:var(--text-muted);font-size:12px;cursor:pointer;margin-bottom:8px" ondragover="aeDragOver(event)" ondragleave="aeDragLeave(event)" ondrop="aeDrop(event)" onclick="document.getElementById('aeImageFile').click()">
+            Drop images here or click to upload · max 2MB each
           </div>
+          <input type="file" id="aeImageFile" accept="image/*" multiple onchange="aeHandleFiles(event)" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input type="text" id="aeImageUrlInput" placeholder="...or paste URL" style="flex:1">
+            <button type="button" class="btn-admin btn-admin-ghost" onclick="aeAddUrl()">Add</button>
+          </div>
+          <div id="aeImagesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px"></div>
+          <input type="hidden" id="aeImages">
+          <input type="hidden" id="aeImage">
         </div>
         <div class="admin-row">
           <div class="admin-field"><label>Sort Order</label><input type="number" id="aeSort" value="0"></div>
@@ -218,6 +237,19 @@
     var cart = JSON.parse(localStorage.getItem('bambeo_cart') || '[]');
     var ADMIN_PW = localStorage.getItem('bambeo_admin_pw') || sessionStorage.getItem('bambeo_admin_pw') || '';
     var isAdmin = !!ADMIN_PW;
+    var VALID_IMG = /^(https?:|data:image\/)/i;
+    var aeImagesDraft = [];
+
+    function normalizeImages(p) {
+      if (!p) return [];
+      var arr = [];
+      if (Array.isArray(p.image_urls)) arr = p.image_urls.slice();
+      else if (typeof p.image_urls === 'string') {
+        try { var parsed = JSON.parse(p.image_urls); if (Array.isArray(parsed)) arr = parsed; } catch (e) {}
+      }
+      if (!arr.length && p.image_url) arr = [p.image_url];
+      return arr.filter(function(u) { return u && VALID_IMG.test(u); });
+    }
 
     function fetchFromSupabase(table) {
       return fetch(SUPABASE_URL + '/rest/v1/' + table + '?select=*', {
@@ -235,13 +267,24 @@
       titleEl.textContent = prettyName + ' Collection';
       document.title = prettyName + ' Collection - Bambeo';
 
-      var filtered = !cat ? allProducts : allProducts.filter(function(p) {
+      var byCat = !cat ? allProducts : allProducts.filter(function(p) {
         return (p.category || '').toLowerCase() === cat.toLowerCase();
       });
 
-      if (!filtered.length) {
+      var q = (document.getElementById('productSearch') ? document.getElementById('productSearch').value : '').toLowerCase().trim();
+      var filtered = !q ? byCat : byCat.filter(function(p) {
+        var hay = ((p.name||'') + ' ' + (p.display_text||'') + ' ' + (p.description||'')).toLowerCase();
+        return hay.indexOf(q) !== -1;
+      });
+
+      if (!byCat.length) {
         subEl.textContent = 'No pieces in this collection yet';
         container.innerHTML = '<div class="empty-state"><h3>Coming Soon</h3><p>We\'re working on adding more pieces to this collection.</p></div>';
+        return;
+      }
+      if (!filtered.length) {
+        subEl.textContent = 'No matches for "' + esc(q) + '"';
+        container.innerHTML = '<div class="empty-state"><h3>No matches</h3><p>Try a different search.</p></div>';
         return;
       }
 
@@ -250,13 +293,25 @@
       container.innerHTML = '<div class="products-grid">' + filtered.map(function(p) {
         var safeId = esc(p.id);
         var safeTag = (p.tag === 'best' || p.tag === 'new') ? p.tag : '';
-        var imgUrl = p.image_url && /^(https?:|data:image\/)/i.test(p.image_url) ? p.image_url : '';
-        var imageBg = imgUrl ? ' style="background-image:url(\'' + esc(imgUrl) + '\');background-size:cover;background-position:center;padding:0"' : '';
-        var labelHtml = imgUrl ? '' : '<span style="color:' + escColor(p.color) + '">' + esc(p.display_text || p.name) + '</span>';
+        var imgs = normalizeImages(p);
+        var primary = imgs[0] || '';
+        var imageBg = primary ? ' style="background-image:url(\'' + esc(primary) + '\');background-size:cover;background-position:center;padding:0"' : '';
+        var labelHtml = primary ? '' : '<span style="color:' + escColor(p.color) + '">' + esc(p.display_text || p.name) + '</span>';
+        var dots = imgs.length > 1
+          ? '<div class="img-dots">' + imgs.map(function(_, i) { return '<span class="' + (i === 0 ? 'active' : '') + '"></span>'; }).join('') + '</div>'
+          : '';
         var adminCtrls = isAdmin
           ? '<button class="admin-delete-btn" onclick="adminDelete(\'' + safeId + '\')">Delete</button><button class="admin-edit-btn" onclick="openAdminEdit(\'' + safeId + '\')">Edit</button>'
           : '<button class="add-to-cart-btn" onclick="addToCart(\'' + safeId + '\')">Add to Cart</button>';
-        return '<div class="product-card"><div class="product-image"' + imageBg + '>' + (safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '') + labelHtml + adminCtrls + '</div><div class="product-info"><div class="product-name">' + esc(p.name) + '</div><div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div></div></div>';
+        var tagHtml = safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '';
+        var descHtml = p.description ? '<div class="product-desc">' + esc(p.description) + '</div>' : '';
+        return '<div class="product-card">'
+          + '<div class="product-image"' + imageBg + '>' + tagHtml + labelHtml + dots + adminCtrls + '</div>'
+          + '<div class="product-info">'
+          + '<div class="product-name">' + esc(p.name) + '</div>'
+          + '<div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div>'
+          + descHtml
+          + '</div></div>';
       }).join('') + '</div>';
     }
 
@@ -394,11 +449,13 @@
       document.getElementById('aeColor').value = p && p.color ? p.color : '#ff66b2';
       document.getElementById('aeCategory').value = p ? (p.category || getCategoryParam()) : getCategoryParam();
       document.getElementById('aeTag').value = p ? (p.tag || '') : '';
-      document.getElementById('aeImage').value = p ? (p.image_url || '') : '';
+      document.getElementById('aeDescription').value = p ? (p.description || '') : '';
       document.getElementById('aeSort').value = p ? (p.sort_order || 0) : 0;
       document.getElementById('aeActive').value = (p && p.is_active === false) ? 'false' : 'true';
       document.getElementById('aeImageFile').value = '';
-      aeUpdatePreview();
+      document.getElementById('aeImageUrlInput').value = '';
+      aeImagesDraft = normalizeImages(p);
+      aeRenderGrid();
       document.getElementById('adminEditModal').classList.add('open');
     }
 
@@ -406,29 +463,71 @@
       document.getElementById('adminEditModal').classList.remove('open');
     }
 
-    function aeUpdatePreview() {
-      var img = document.getElementById('aeImagePreview');
-      var url = document.getElementById('aeImage').value;
-      if (url) { img.src = url; img.style.display = 'block'; }
-      else { img.removeAttribute('src'); img.style.display = 'none'; }
+    function aeRenderGrid() {
+      var grid = document.getElementById('aeImagesGrid');
+      if (!aeImagesDraft.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;padding:4px 0">No images yet</div>';
+      } else {
+        grid.innerHTML = aeImagesDraft.map(function(url, i) {
+          return '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:#1c1c1c">'
+            + '<img src="' + esc(url) + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+            + (i === 0 ? '<span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.75);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:600">PRIMARY</span>' : '')
+            + '<button type="button" onclick="aeRemove(' + i + ')" title="Remove" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,0.75);color:#fff;cursor:pointer;font-size:12px;line-height:1">×</button>'
+            + (i > 0 ? '<button type="button" onclick="aePromote(' + i + ')" title="Make primary" style="position:absolute;top:4px;left:4px;padding:2px 6px;border-radius:10px;border:none;background:rgba(255,255,255,0.92);color:#000;cursor:pointer;font-size:10px;font-weight:600">Set primary</button>' : '')
+            + '</div>';
+        }).join('');
+      }
+      document.getElementById('aeImages').value = JSON.stringify(aeImagesDraft);
+      document.getElementById('aeImage').value = aeImagesDraft[0] || '';
     }
 
-    function aeHandleFile(e) {
-      var file = e.target.files && e.target.files[0];
-      if (!file) return;
-      if (file.size > 2 * 1024 * 1024) { alert('Image too large (max 2MB)'); e.target.value = ''; return; }
-      var reader = new FileReader();
-      reader.onload = function(ev) {
-        document.getElementById('aeImage').value = ev.target.result;
-        aeUpdatePreview();
-      };
-      reader.readAsDataURL(file);
+    function aeAddUrl() {
+      var input = document.getElementById('aeImageUrlInput');
+      var url = (input.value || '').trim();
+      if (!url) return;
+      if (!VALID_IMG.test(url)) { alert('Only http(s) or data:image URLs allowed'); return; }
+      aeImagesDraft.push(url);
+      input.value = '';
+      aeRenderGrid();
     }
 
-    function aeClearImage() {
-      document.getElementById('aeImage').value = '';
-      document.getElementById('aeImageFile').value = '';
-      aeUpdatePreview();
+    function aeRemove(i) { aeImagesDraft.splice(i, 1); aeRenderGrid(); }
+    function aePromote(i) {
+      if (i <= 0 || i >= aeImagesDraft.length) return;
+      var item = aeImagesDraft.splice(i, 1)[0];
+      aeImagesDraft.unshift(item);
+      aeRenderGrid();
+    }
+
+    function aeHandleFiles(e) {
+      aeIngest(Array.from(e.target.files || []));
+      e.target.value = '';
+    }
+
+    function aeIngest(files) {
+      var remaining = files.length;
+      if (!remaining) return;
+      files.forEach(function(f) {
+        if (!f.type || f.type.indexOf('image/') !== 0) { remaining--; if (!remaining) aeRenderGrid(); return; }
+        if (f.size > 2 * 1024 * 1024) { alert('"' + f.name + '" exceeds 2MB, skipped'); remaining--; if (!remaining) aeRenderGrid(); return; }
+        var r = new FileReader();
+        r.onload = function(ev) {
+          aeImagesDraft.push(ev.target.result);
+          remaining--;
+          if (!remaining) aeRenderGrid();
+        };
+        r.onerror = function() { remaining--; if (!remaining) aeRenderGrid(); };
+        r.readAsDataURL(f);
+      });
+    }
+
+    function aeDragOver(e) { e.preventDefault(); e.currentTarget.style.borderColor = '#66d9ff'; }
+    function aeDragLeave(e) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }
+    function aeDrop(e) {
+      e.preventDefault();
+      aeDragLeave(e);
+      var files = Array.from(e.dataTransfer ? e.dataTransfer.files : []);
+      if (files.length) aeIngest(files);
     }
 
     function saveAdminEdit() {
@@ -436,6 +535,7 @@
       var name = document.getElementById('aeName').value.trim();
       if (!name) { alert('Name is required'); return; }
       var priceVal = parseFloat(document.getElementById('aePrice').value);
+      var images = aeImagesDraft.slice();
       var row = {
         name: name,
         display_text: document.getElementById('aeDisplayText').value || null,
@@ -443,7 +543,9 @@
         color: document.getElementById('aeColor').value,
         category: document.getElementById('aeCategory').value || null,
         tag: document.getElementById('aeTag').value || null,
-        image_url: document.getElementById('aeImage').value || null,
+        description: document.getElementById('aeDescription').value || null,
+        image_urls: images,
+        image_url: images[0] || null,
         sort_order: parseInt(document.getElementById('aeSort').value, 10) || 0,
         is_active: document.getElementById('aeActive').value === 'true'
       };
