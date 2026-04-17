@@ -77,6 +77,15 @@
     .stat-label{font-size:13px;color:var(--text-muted);margin-bottom:8px}
     .stat-value{font-size:28px;font-weight:700}
     .empty-state{text-align:center;padding:48px;color:var(--text-muted)}
+    .panels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+    .panel-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:border-color .15s,transform .15s}
+    .panel-card:hover{border-color:var(--primary,#6366f1);transform:translateY(-1px)}
+    .panel-card .panel-swatch{height:80px;border-radius:8px;background:linear-gradient(135deg,#eef,#ccf);position:relative;overflow:hidden}
+    .panel-card .panel-swatch img{width:100%;height:100%;object-fit:cover;display:block}
+    .panel-card .panel-name{font-weight:600;font-size:16px;text-transform:capitalize}
+    .panel-card .panel-meta{color:var(--text-muted);font-size:13px}
+    .panel-card .panel-actions{display:flex;gap:8px;margin-top:auto}
+    .panel-card .panel-actions .btn{flex:1}
     .loading{text-align:center;padding:48px;color:var(--text-muted)}
     .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -163,20 +172,37 @@
 
       <!-- Products -->
       <div class="page-section" id="page-products">
-        <div class="page-header"><h1 class="page-title">Products</h1><button class="btn btn-primary" onclick="openProductModal()">+ Add Product</button></div>
-        <div class="card" style="margin-bottom:16px;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <label class="form-label" style="margin:0">Filter by category:</label>
-          <select class="form-input" id="productCategoryFilter" style="max-width:240px" onchange="renderProductsTable()">
-            <option value="">All categories</option>
-          </select>
-          <input type="text" class="form-input" id="productSearchFilter" placeholder="Search name or description..." style="max-width:280px" oninput="renderProductsTable()">
-          <span id="productFilterCount" style="color:var(--text-muted);font-size:13px;margin-left:auto"></span>
+        <!-- Level 1: Panels (categories) -->
+        <div id="panelsView">
+          <div class="page-header">
+            <h1 class="page-title">Panels</h1>
+            <button class="btn btn-primary" onclick="openPanelModal()">+ Add Panel</button>
+          </div>
+          <p style="color:var(--text-muted);margin:-8px 0 16px;font-size:14px">Each panel is a category shown on the homepage. Click a panel to manage its products.</p>
+          <div id="panelsGrid" class="panels-grid"><div class="loading"><div class="spinner"></div>Loading...</div></div>
         </div>
-        <div class="card">
-          <table class="data-table">
-            <thead><tr><th>Image</th><th>Color</th><th>Name</th><th>Display Text</th><th>Price</th><th>Category</th><th>Tag</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="productsTable"><tr><td colspan="9" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
-          </table>
+
+        <!-- Level 2: Products inside a panel -->
+        <div id="panelDetailView" style="display:none">
+          <div class="page-header" style="align-items:center">
+            <div style="display:flex;align-items:center;gap:12px">
+              <button class="btn btn-ghost btn-sm" onclick="closePanelDetail()">&larr; Back to panels</button>
+              <h1 class="page-title" style="margin:0" id="panelDetailTitle">Panel</h1>
+            </div>
+            <button class="btn btn-primary" onclick="openProductModal()">+ Add Product</button>
+          </div>
+          <div class="card" style="margin-bottom:16px;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <input type="text" class="form-input" id="productSearchFilter" placeholder="Search name or description..." style="max-width:320px" oninput="renderProductsTable()">
+            <span id="productFilterCount" style="color:var(--text-muted);font-size:13px;margin-left:auto"></span>
+          </div>
+          <!-- Hidden legacy filter kept for back-compat with existing code paths -->
+          <select id="productCategoryFilter" style="display:none"><option value=""></option></select>
+          <div class="card">
+            <table class="data-table">
+              <thead><tr><th>Image</th><th>Color</th><th>Name</th><th>Display Text</th><th>Price</th><th>Category</th><th>Tag</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="productsTable"><tr><td colspan="9" class="empty-state">No products yet</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -235,6 +261,24 @@
   </div>
 
   <!-- Product Modal -->
+  <!-- Panel Modal (add a new category/panel) -->
+  <div class="modal-overlay" id="panelModal">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header"><h3>Add Panel</h3><button class="btn btn-ghost btn-icon" onclick="closePanelModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Panel name (category ID)</label>
+          <input type="text" class="form-input" id="panelNameInput" placeholder="e.g. art, signs, decor">
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px">Lowercase, no spaces. Used in the URL: /collection.html?cat=&lt;name&gt;</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closePanelModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createPanel()">Create</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="productModal">
     <div class="modal">
       <div class="modal-header"><h3 id="productModalTitle">Add Product</h3><button class="btn btn-ghost btn-icon" onclick="closeProductModal()">✕</button></div>
@@ -472,7 +516,12 @@
       event.target.classList.add('active');
       if (page === 'dashboard') loadDashboard();
       if (page === 'quotes') loadQuotes();
-      if (page === 'products') loadProducts();
+      if (page === 'products') {
+        // Always land on the panels grid when entering the Products page
+        document.getElementById('panelsView').style.display = 'block';
+        document.getElementById('panelDetailView').style.display = 'none';
+        loadProducts();
+      }
       if (page === 'testimonials') loadTestimonials();
       if (page === 'faqs') loadFaqs();
       if (page === 'settings') loadSettings();
@@ -634,24 +683,134 @@
       return arr.filter(u => u && VALID_IMG.test(u));
     }
 
+    // Extra user-created panels that may not yet have any products
+    const EXTRA_PANELS_KEY = 'bambeo_admin_extra_panels';
+    function loadExtraPanels() {
+      try { return JSON.parse(localStorage.getItem(EXTRA_PANELS_KEY) || '[]'); } catch (e) { return []; }
+    }
+    function saveExtraPanels(arr) {
+      localStorage.setItem(EXTRA_PANELS_KEY, JSON.stringify(arr));
+    }
+
     async function loadProducts() {
       const { data, error } = await supabase.from('products').select('*');
       if (error) return showToast('Error loading products', 'error');
       window._adminProducts = {};
       (data || []).forEach(p => { window._adminProducts[p.id] = p; });
-      // Populate category filter dropdown with unique categories
-      const cats = Array.from(new Set((data || []).map(p => p.category).filter(Boolean))).sort();
+
+      // Unique categories from DB, merged with user-created empty panels
+      const dbCats = (data || []).map(p => p.category).filter(Boolean);
+      const extras = loadExtraPanels();
+      const cats = Array.from(new Set([...dbCats, ...extras])).sort();
+
+      // Keep hidden legacy select in sync so filter-aware code still works
       const select = document.getElementById('productCategoryFilter');
       if (select) {
         const current = select.value;
         select.innerHTML = '<option value="">All categories</option>' +
           cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-        // Honor ?cat=X deep-link from client sub-pages, then fall back to whatever was selected
-        const urlCat = new URLSearchParams(location.search).get('cat');
-        if (urlCat && cats.includes(urlCat)) select.value = urlCat;
-        else if (cats.includes(current)) select.value = current;
+        if (cats.includes(current)) select.value = current;
       }
+
+      // Honor ?cat=X deep-link: jump straight into that panel
+      const urlCat = new URLSearchParams(location.search).get('cat');
+      renderPanelsGrid(cats);
+      if (urlCat && cats.includes(urlCat)) {
+        openPanelDetail(urlCat);
+      } else if (document.getElementById('panelDetailView').style.display !== 'none') {
+        // Currently viewing a panel — refresh its table
+        renderProductsTable();
+      }
+    }
+
+    function renderPanelsGrid(cats) {
+      const grid = document.getElementById('panelsGrid');
+      if (!grid) return;
+      if (!cats.length) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No panels yet. Click <b>+ Add Panel</b> to create one.</div>';
+        return;
+      }
+      const products = Object.values(window._adminProducts || {});
+      grid.innerHTML = cats.map(cat => {
+        const inCat = products.filter(p => (p.category || '').toLowerCase() === cat.toLowerCase());
+        const count = inCat.length;
+        const sample = inCat.find(p => normalizeImages(p).length);
+        const img = sample ? esc(normalizeImages(sample)[0]) : '';
+        const swatch = img
+          ? `<img src="${img}" alt="">`
+          : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#99a;font-size:28px;text-transform:uppercase;font-weight:700">${esc(cat.charAt(0))}</div>`;
+        const safe = esc(cat);
+        return `
+          <div class="panel-card">
+            <div class="panel-swatch">${swatch}</div>
+            <div>
+              <div class="panel-name">${safe}</div>
+              <div class="panel-meta">${count} product${count === 1 ? '' : 's'}</div>
+            </div>
+            <div class="panel-actions">
+              <button class="btn btn-primary btn-sm" onclick="openPanelDetail('${safe}')">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deletePanel('${safe}')">Delete</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function openPanelDetail(cat) {
+      document.getElementById('panelsView').style.display = 'none';
+      document.getElementById('panelDetailView').style.display = 'block';
+      document.getElementById('panelDetailTitle').textContent = cat;
+      const select = document.getElementById('productCategoryFilter');
+      if (select) select.value = cat;
+      const search = document.getElementById('productSearchFilter');
+      if (search) search.value = '';
       renderProductsTable();
+    }
+
+    function closePanelDetail() {
+      document.getElementById('panelDetailView').style.display = 'none';
+      document.getElementById('panelsView').style.display = 'block';
+      // Clear ?cat= so refreshing doesn't re-drill
+      if (new URLSearchParams(location.search).get('cat')) {
+        history.replaceState(null, '', location.pathname);
+      }
+      loadProducts();
+    }
+
+    function openPanelModal() {
+      document.getElementById('panelNameInput').value = '';
+      document.getElementById('panelModal').classList.add('active');
+      setTimeout(() => document.getElementById('panelNameInput').focus(), 50);
+    }
+    function closePanelModal() {
+      document.getElementById('panelModal').classList.remove('active');
+    }
+    function createPanel() {
+      const raw = (document.getElementById('panelNameInput').value || '').trim().toLowerCase();
+      if (!raw) { showToast('Enter a panel name', 'error'); return; }
+      if (!/^[a-z0-9][a-z0-9_-]*$/.test(raw)) {
+        showToast('Use lowercase letters, numbers, _ or - only', 'error'); return;
+      }
+      const extras = loadExtraPanels();
+      if (!extras.includes(raw)) { extras.push(raw); saveExtraPanels(extras); }
+      closePanelModal();
+      loadProducts().then(() => openPanelDetail(raw));
+    }
+    async function deletePanel(cat) {
+      const products = Object.values(window._adminProducts || {})
+        .filter(p => (p.category || '').toLowerCase() === cat.toLowerCase());
+      const msg = products.length
+        ? `Delete panel "${cat}" and all ${products.length} product(s) in it? This cannot be undone.`
+        : `Delete empty panel "${cat}"?`;
+      if (!confirm(msg)) return;
+      if (products.length) {
+        const { error } = await supabase.from('products').delete().eq('category', cat);
+        if (error) { showToast('Error deleting products', 'error'); return; }
+      }
+      const extras = loadExtraPanels().filter(c => c !== cat);
+      saveExtraPanels(extras);
+      showToast('Panel deleted');
+      loadProducts();
+      loadDashboard();
     }
 
     function renderProductsTable() {
