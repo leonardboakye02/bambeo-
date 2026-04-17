@@ -985,12 +985,14 @@
       const name = document.getElementById('productName').value.trim();
       if (!name) { showToast('Name is required', 'error'); return; }
       const images = productImagesDraft.slice();
+      const cat = document.getElementById('productCategory').value.trim();
+      if (!cat) { showToast('Category is required (pick a panel)', 'error'); return; }
       const data = {
         name: name,
         display_text: document.getElementById('productDisplayText').value || null,
         price: parseFloat(document.getElementById('productPrice').value) || 0,
         color: document.getElementById('productColor').value,
-        category: document.getElementById('productCategory').value || null,
+        category: cat,
         tag: document.getElementById('productTag').value || null,
         description: document.getElementById('productDescription').value || null,
         image_urls: images,
@@ -998,13 +1000,35 @@
         sort_order: parseInt(document.getElementById('productSort').value, 10) || 0,
         is_active: document.getElementById('productActive').value === 'true'
       };
-      let result;
-      if (id) { result = await supabase.from('products').update(data).eq('id', id); }
-      else { result = await supabase.from('products').insert(data); }
-      if (result.error) { showToast('Error saving product', 'error'); return; }
-      showToast('Product saved');
-      closeProductModal();
-      loadProducts();
+      try {
+        let result;
+        if (id) {
+          result = await supabase.from('products').update(data).eq('id', id);
+        } else {
+          // Wrap in array — PostgREST insert is happier with an array payload
+          result = await supabase.from('products').insert([data]);
+        }
+        if (result.error) {
+          const msg = typeof result.error === 'string'
+            ? result.error
+            : (result.error.message || JSON.stringify(result.error));
+          console.error('saveProduct error:', result.error);
+          showToast('Save failed: ' + msg, 'error');
+          return;
+        }
+        showToast('Product saved');
+        // If we just created a product for a panel the user created in-memory,
+        // drop it from the extras list since the DB now carries it.
+        if (cat) {
+          const extras = loadExtraPanels().filter(c => c !== cat);
+          saveExtraPanels(extras);
+        }
+        closeProductModal();
+        loadProducts();
+      } catch (err) {
+        console.error('saveProduct threw:', err);
+        showToast('Save failed: ' + (err.message || err), 'error');
+      }
     }
 
     async function deleteProduct(id) {
