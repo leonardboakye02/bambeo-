@@ -812,11 +812,11 @@
 
     function openPanelModal() {
       document.getElementById('panelNameInput').value = '';
-      document.getElementById('panelModal').classList.add('active');
+      document.getElementById('panelModal').classList.add('open');
       setTimeout(() => document.getElementById('panelNameInput').focus(), 50);
     }
     function closePanelModal() {
-      document.getElementById('panelModal').classList.remove('active');
+      document.getElementById('panelModal').classList.remove('open');
     }
     function createPanel() {
       const raw = (document.getElementById('panelNameInput').value || '').trim().toLowerCase();
