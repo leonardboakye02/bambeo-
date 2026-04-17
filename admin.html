@@ -120,7 +120,6 @@
         <button class="nav-item active" onclick="showPage('dashboard')">📊 Dashboard</button>
         <button class="nav-item" onclick="showPage('quotes')" id="quotesNav">💬 Quote Requests <span class="nav-badge" id="newQuotesCount" style="display:none">0</span></button>
         <button class="nav-item" onclick="showPage('products')">📦 Products</button>
-        <button class="nav-item" onclick="showPage('gallery')">🖼️ Gallery</button>
         <button class="nav-item" onclick="showPage('testimonials')">⭐ Testimonials</button>
         <button class="nav-item" onclick="showPage('faqs')">❓ FAQs</button>
         <button class="nav-item" onclick="showPage('settings')">⚙️ Settings</button>
@@ -138,7 +137,6 @@
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-label">New Quotes</div><div class="stat-value" id="stat-quotes" style="color:var(--warning)">-</div></div>
           <div class="stat-card"><div class="stat-label">Products</div><div class="stat-value" id="stat-products">-</div></div>
-          <div class="stat-card"><div class="stat-label">Gallery</div><div class="stat-value" id="stat-gallery">-</div></div>
           <div class="stat-card"><div class="stat-label">Testimonials</div><div class="stat-value" id="stat-testimonials">-</div></div>
           <div class="stat-card"><div class="stat-label">FAQs</div><div class="stat-value" id="stat-faqs">-</div></div>
         </div>
@@ -147,7 +145,6 @@
           <div style="display:flex;gap:12px;flex-wrap:wrap">
             <button class="btn btn-warning" onclick="showPage('quotes')">View Quote Requests</button>
             <button class="btn btn-primary" onclick="showPage('products');openProductModal()">+ Add Product</button>
-            <button class="btn btn-ghost" onclick="showPage('gallery');openGalleryModal()">+ Add Gallery</button>
           </div>
         </div>
       </div>
@@ -171,17 +168,6 @@
           <table class="data-table">
             <thead><tr><th>Image</th><th>Color</th><th>Name</th><th>Display Text</th><th>Price</th><th>Category</th><th>Tag</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="productsTable"><tr><td colspan="9" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Gallery -->
-      <div class="page-section" id="page-gallery">
-        <div class="page-header"><h1 class="page-title">Gallery</h1><button class="btn btn-primary" onclick="openGalleryModal()">+ Add Item</button></div>
-        <div class="card">
-          <table class="data-table">
-            <thead><tr><th>Image</th><th>Color</th><th>Title</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="galleryTable"><tr><td colspan="6" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -276,37 +262,6 @@
     </div>
   </div>
 
-  <!-- Gallery Modal -->
-  <div class="modal-overlay" id="galleryModal">
-    <div class="modal">
-      <div class="modal-header"><h3 id="galleryModalTitle">Add Gallery Item</h3><button class="btn btn-ghost btn-icon" onclick="closeGalleryModal()">✕</button></div>
-      <div class="modal-body">
-        <input type="hidden" id="galleryId">
-        <div class="form-group"><label class="form-label">Title</label><input type="text" class="form-input" id="galleryTitle" placeholder="e.g., Coffee"></div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Color</label><input type="color" class="form-input" id="galleryColor" value="#ff9966" style="height:44px;padding:4px"></div>
-          <div class="form-group"><label class="form-label">Category</label><select class="form-input" id="galleryCategory"><option value="signs">Signs</option><option value="custom">Custom</option><option value="decor">Decor</option></select></div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Image</label>
-          <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
-            <img id="galleryImagePreview" style="display:none;width:96px;height:96px;object-fit:cover;border-radius:8px;border:1px solid #e5e5e5;background:#f5f5f5" alt="">
-            <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px">
-              <input type="text" class="form-input" id="galleryImage" placeholder="https://... or upload below" oninput="updateGalleryImagePreview()">
-              <input type="file" accept="image/*" id="galleryImageFile" onchange="handleGalleryImageFile(event)" style="font-size:13px">
-              <button type="button" class="btn btn-ghost btn-sm" onclick="clearGalleryImage()" style="align-self:flex-start">Clear image</button>
-            </div>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Sort Order</label><input type="number" class="form-input" id="gallerySort" value="0"></div>
-          <div class="form-group"><label class="form-label">Status</label><select class="form-input" id="galleryActive"><option value="true">Active</option><option value="false">Inactive</option></select></div>
-        </div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeGalleryModal()">Cancel</button><button class="btn btn-primary" onclick="saveGallery()">Save</button></div>
-    </div>
-  </div>
-
   <!-- Testimonial Modal -->
   <div class="modal-overlay" id="testimonialModal">
     <div class="modal">
@@ -357,7 +312,7 @@
   <script>
     const ADMIN_API = '/api/admin';
     let supabase = null;
-    let adminPassword = sessionStorage.getItem('bambeo_admin_pw') || '';
+    let adminPassword = localStorage.getItem('bambeo_admin_pw') || '';
     let allQuotes = [];
     let currentQuoteId = null;
     let currentFilter = 'all';
@@ -382,11 +337,11 @@
           document.getElementById('adminLayout').classList.add('active');
           loadDashboard();
         } else {
-          sessionStorage.removeItem('bambeo_admin_pw');
+          localStorage.removeItem('bambeo_admin_pw');
           adminPassword = '';
         }
       } catch (e) {
-        sessionStorage.removeItem('bambeo_admin_pw');
+        localStorage.removeItem('bambeo_admin_pw');
         adminPassword = '';
       }
     }
@@ -472,7 +427,7 @@
         });
         if (res.ok) {
           adminPassword = password;
-          sessionStorage.setItem('bambeo_admin_pw', password);
+          localStorage.setItem('bambeo_admin_pw', password);
           initSupabase();
           document.getElementById('loginScreen').style.display = 'none';
           document.getElementById('adminLayout').classList.add('active');
@@ -486,7 +441,7 @@
     }
 
     function logout() {
-      sessionStorage.removeItem('bambeo_admin_pw');
+      localStorage.removeItem('bambeo_admin_pw');
       adminPassword = '';
       supabase = null;
       document.getElementById('loginScreen').style.display = 'flex';
@@ -502,24 +457,21 @@
       if (page === 'dashboard') loadDashboard();
       if (page === 'quotes') loadQuotes();
       if (page === 'products') loadProducts();
-      if (page === 'gallery') loadGallery();
       if (page === 'testimonials') loadTestimonials();
       if (page === 'faqs') loadFaqs();
       if (page === 'settings') loadSettings();
     }
 
     async function loadDashboard() {
-      const [quotes, products, gallery, testimonials, faqs] = await Promise.all([
+      const [quotes, products, testimonials, faqs] = await Promise.all([
         supabase.from('quote_requests').select('id,status'),
         supabase.from('products').select('id'),
-        supabase.from('gallery').select('id'),
         supabase.from('testimonials').select('id'),
         supabase.from('faqs').select('id')
       ]);
       const newQuotes = quotes.data?.filter(q => q.status === 'new').length || 0;
       document.getElementById('stat-quotes').textContent = newQuotes;
       document.getElementById('stat-products').textContent = products.data?.length || 0;
-      document.getElementById('stat-gallery').textContent = gallery.data?.length || 0;
       document.getElementById('stat-testimonials').textContent = testimonials.data?.length || 0;
       document.getElementById('stat-faqs').textContent = faqs.data?.length || 0;
       
@@ -751,101 +703,6 @@
       if (error) { showToast('Error deleting', 'error'); return; }
       showToast('Product deleted');
       loadProducts();
-    }
-
-    // GALLERY
-    async function loadGallery() {
-      const { data, error } = await supabase.from('gallery').select('*');
-      if (error) return showToast('Error loading gallery', 'error');
-      const tbody = document.getElementById('galleryTable');
-      if (!data?.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No gallery items yet</td></tr>'; return; }
-      data.sort((a, b) => (a.sort_order||0) - (b.sort_order||0));
-      window._adminGallery = {};
-      data.forEach(g => { window._adminGallery[g.id] = g; });
-      tbody.innerHTML = data.map(g => {
-        var validImg = g.image_url && /^(https?:|data:image\/)/i.test(g.image_url) ? esc(g.image_url) : '';
-        var thumb = validImg ? `<img src="${validImg}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:6px;border:1px solid #e5e5e5">` : '<span style="display:inline-block;width:40px;height:40px;border-radius:6px;background:#f3f3f3;border:1px dashed #d1d5db"></span>';
-        return `
-        <tr>
-          <td>${thumb}</td>
-          <td><span class="color-swatch" style="background:${escColor(g.color)}"></span></td>
-          <td>${esc(g.title)}</td>
-          <td>${esc(g.category || '-')}</td>
-          <td><span class="badge ${g.is_active ? 'badge-success' : 'badge-muted'}">${g.is_active ? 'Active' : 'Inactive'}</span></td>
-          <td class="action-btns">
-            <button class="btn btn-ghost btn-sm" onclick="editGallery(window._adminGallery['${esc(g.id)}'])">Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteGallery('${esc(g.id)}')">Delete</button>
-          </td>
-        </tr>`;
-      }).join('');
-    }
-
-    function openGalleryModal(g = null) {
-      document.getElementById('galleryModalTitle').textContent = g ? 'Edit Gallery Item' : 'Add Gallery Item';
-      document.getElementById('galleryId').value = g?.id || '';
-      document.getElementById('galleryTitle').value = g?.title || '';
-      document.getElementById('galleryColor').value = g?.color || '#ff9966';
-      document.getElementById('galleryCategory').value = g?.category || 'signs';
-      document.getElementById('galleryImage').value = g?.image_url || '';
-      document.getElementById('gallerySort').value = g?.sort_order || 0;
-      document.getElementById('galleryActive').value = g?.is_active !== false ? 'true' : 'false';
-      document.getElementById('galleryImageFile').value = '';
-      updateGalleryImagePreview();
-      document.getElementById('galleryModal').classList.add('open');
-    }
-
-    function updateGalleryImagePreview() {
-      const img = document.getElementById('galleryImagePreview');
-      const url = document.getElementById('galleryImage').value;
-      if (url) { img.src = url; img.style.display = 'block'; }
-      else { img.removeAttribute('src'); img.style.display = 'none'; }
-    }
-
-    function handleGalleryImageFile(e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      if (file.size > 2 * 1024 * 1024) { showToast('Image too large (max 2MB)', 'error'); e.target.value = ''; return; }
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        document.getElementById('galleryImage').value = ev.target.result;
-        updateGalleryImagePreview();
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function clearGalleryImage() {
-      document.getElementById('galleryImage').value = '';
-      document.getElementById('galleryImageFile').value = '';
-      updateGalleryImagePreview();
-    }
-    function closeGalleryModal() { document.getElementById('galleryModal').classList.remove('open'); }
-    function editGallery(g) { openGalleryModal(g); }
-
-    async function saveGallery() {
-      const id = document.getElementById('galleryId').value;
-      const data = {
-        title: document.getElementById('galleryTitle').value,
-        color: document.getElementById('galleryColor').value,
-        category: document.getElementById('galleryCategory').value,
-        image_url: document.getElementById('galleryImage').value || null,
-        sort_order: parseInt(document.getElementById('gallerySort').value),
-        is_active: document.getElementById('galleryActive').value === 'true'
-      };
-      let result;
-      if (id) { result = await supabase.from('gallery').update(data).eq('id', id); }
-      else { result = await supabase.from('gallery').insert(data); }
-      if (result.error) { showToast('Error saving', 'error'); return; }
-      showToast('Gallery item saved');
-      closeGalleryModal();
-      loadGallery();
-    }
-
-    async function deleteGallery(id) {
-      if (!confirm('Delete this item?')) return;
-      const { error } = await supabase.from('gallery').delete().eq('id', id);
-      if (error) { showToast('Error deleting', 'error'); return; }
-      showToast('Item deleted');
-      loadGallery();
     }
 
     // TESTIMONIALS

@@ -216,7 +216,7 @@
 
     var allProducts = [];
     var cart = JSON.parse(localStorage.getItem('bambeo_cart') || '[]');
-    var ADMIN_PW = sessionStorage.getItem('bambeo_admin_pw') || '';
+    var ADMIN_PW = localStorage.getItem('bambeo_admin_pw') || sessionStorage.getItem('bambeo_admin_pw') || '';
     var isAdmin = !!ADMIN_PW;
 
     function fetchFromSupabase(table) {
