@@ -726,33 +726,67 @@
     function renderPanelsGrid(cats) {
       const grid = document.getElementById('panelsGrid');
       if (!grid) return;
-      if (!cats.length) {
-        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No panels yet. Click <b>+ Add Panel</b> to create one.</div>';
-        return;
-      }
-      const products = Object.values(window._adminProducts || {});
-      grid.innerHTML = cats.map(cat => {
-        const inCat = products.filter(p => (p.category || '').toLowerCase() === cat.toLowerCase());
-        const count = inCat.length;
-        const sample = inCat.find(p => normalizeImages(p).length);
-        const img = sample ? esc(normalizeImages(sample)[0]) : '';
+      const products = Object.values(window._adminProducts || {})
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+      // One card per homepage tile = one card per product. Mirrors the public
+      // "Featured Pieces" section so admin and storefront line up 1:1.
+      const productCards = products.map(p => {
+        const imgs = normalizeImages(p);
+        const img = imgs[0] ? esc(imgs[0]) : '';
+        const cat = p.category || '';
         const swatch = img
           ? `<img src="${img}" alt="">`
-          : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#99a;font-size:28px;text-transform:uppercase;font-weight:700">${esc(cat.charAt(0))}</div>`;
-        const safe = esc(cat);
+          : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#99a;font-size:28px;text-transform:uppercase;font-weight:700">${esc((p.name || '?').charAt(0))}</div>`;
+        const safeCat = esc(cat);
+        const safeName = esc(p.name || 'Untitled');
+        const safeId = esc(p.id);
+        const meta = cat
+          ? `in <b>${safeCat}</b>`
+          : '<span style="color:#c55">no category</span>';
+        const editBtn = cat
+          ? `<button class="btn btn-primary btn-sm" onclick="openPanelDetail('${safeCat}')">Edit</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="editProduct(window._adminProducts['${safeId}'])">Edit</button>`;
         return `
           <div class="panel-card">
             <div class="panel-swatch">${swatch}</div>
             <div>
-              <div class="panel-name">${safe}</div>
-              <div class="panel-meta">${count} product${count === 1 ? '' : 's'}</div>
+              <div class="panel-name">${safeName}</div>
+              <div class="panel-meta">${meta}</div>
+            </div>
+            <div class="panel-actions">
+              ${editBtn}
+              <button class="btn btn-danger btn-sm" onclick="deleteProduct('${safeId}')">Delete</button>
+            </div>
+          </div>`;
+      });
+
+      // Any panels (categories) with zero products still show up so admins can
+      // fill them. Includes user-created empty panels from localStorage.
+      const usedCats = new Set(products.map(p => (p.category || '').toLowerCase()).filter(Boolean));
+      const emptyCats = cats.filter(c => !usedCats.has(c.toLowerCase()));
+      const emptyCards = emptyCats.map(cat => {
+        const safe = esc(cat);
+        return `
+          <div class="panel-card">
+            <div class="panel-swatch"><div style="display:flex;align-items:center;justify-content:center;height:100%;color:#99a;font-size:28px;text-transform:uppercase;font-weight:700">${esc(cat.charAt(0))}</div></div>
+            <div>
+              <div class="panel-name" style="text-transform:capitalize">${safe}</div>
+              <div class="panel-meta">empty panel</div>
             </div>
             <div class="panel-actions">
               <button class="btn btn-primary btn-sm" onclick="openPanelDetail('${safe}')">Edit</button>
               <button class="btn btn-danger btn-sm" onclick="deletePanel('${safe}')">Delete</button>
             </div>
           </div>`;
-      }).join('');
+      });
+
+      const all = productCards.concat(emptyCards);
+      if (!all.length) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No panels yet. Click <b>+ Add Panel</b> to create one.</div>';
+        return;
+      }
+      grid.innerHTML = all.join('');
     }
 
     function openPanelDetail(cat) {
