@@ -87,28 +87,6 @@
     .img-dots span{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.45)}
     .img-dots span.active{background:#fff}
 
-    /* Admin inline edit */
-    .admin-edit-btn{position:absolute;top:12px;right:12px;padding:6px 12px;background:#fff;color:#000;border:none;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;z-index:2}
-    .admin-edit-btn:hover{background:#eee}
-    .admin-delete-btn{position:absolute;top:12px;right:72px;padding:6px 10px;background:rgba(255,102,128,0.9);color:#fff;border:none;border-radius:50px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;z-index:2}
-    .admin-add-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#fff;color:#000;border:none;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:12px}
-    .admin-badge{display:inline-block;padding:4px 10px;background:rgba(102,217,255,0.15);color:var(--blue);border:1px solid rgba(102,217,255,0.3);border-radius:50px;font-size:11px;font-weight:600;margin-bottom:12px}
-    .admin-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
-    .admin-modal-overlay.open{display:flex}
-    .admin-modal{background:#141414;border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;color:#fff}
-    .admin-modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--border)}
-    .admin-modal-header h3{font-family:'Syne',sans-serif;font-size:18px}
-    .admin-modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
-    .admin-modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
-    .admin-field label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:500}
-    .admin-field input,.admin-field select,.admin-field textarea{width:100%;padding:10px 12px;background:#1c1c1c;border:1px solid var(--border);border-radius:8px;color:#fff;font-size:14px;font-family:inherit}
-    .admin-field input[type=color]{height:40px;padding:4px}
-    .admin-field input[type=file]{padding:6px;font-size:12px}
-    .admin-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .admin-preview{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:#1c1c1c;display:none}
-    .btn-admin{padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border:none}
-    .btn-admin-primary{background:#fff;color:#000}
-    .btn-admin-ghost{background:transparent;color:#fff;border:1px solid var(--border)}
   </style>
 </head>
 <body>
@@ -144,10 +122,6 @@
       <div class="section-label">Collection</div>
       <h1 class="collection-title" id="collectionTitle">Loading...</h1>
       <p class="collection-subtitle" id="collectionSubtitle">Curated pieces from this collection</p>
-      <div id="adminToolbar" style="display:none;margin-top:16px">
-        <span class="admin-badge">Admin mode</span>
-        <div><button class="admin-add-btn" onclick="openAdminEdit(null)">+ Add Product to this Collection</button></div>
-      </div>
     </div>
   </section>
 
@@ -161,55 +135,6 @@
       </div>
     </div>
   </section>
-
-  <!-- Admin Edit Modal -->
-  <div class="admin-modal-overlay" id="adminEditModal">
-    <div class="admin-modal">
-      <div class="admin-modal-header">
-        <h3 id="adminEditTitle">Edit Product</h3>
-        <button class="cart-close" onclick="closeAdminEdit()">&times;</button>
-      </div>
-      <div class="admin-modal-body">
-        <input type="hidden" id="aeId">
-        <div class="admin-field"><label>Product Name</label><input type="text" id="aeName" placeholder="e.g., Good Vibes Sign"></div>
-        <div class="admin-field"><label>Display Text</label><input type="text" id="aeDisplayText" placeholder="e.g., Good Vibes"></div>
-        <div class="admin-row">
-          <div class="admin-field"><label>Price ($)</label><input type="number" id="aePrice" placeholder="149"></div>
-          <div class="admin-field"><label>Color</label><input type="color" id="aeColor" value="#ff66b2"></div>
-        </div>
-        <div class="admin-row">
-          <div class="admin-field"><label>Category</label><input type="text" id="aeCategory" placeholder="art, coffee, love..."></div>
-          <div class="admin-field"><label>Tag</label><select id="aeTag"><option value="">None</option><option value="best">Bestseller</option><option value="new">New</option></select></div>
-        </div>
-        <div class="admin-field">
-          <label>Description</label>
-          <textarea id="aeDescription" rows="3" placeholder="Short description shown on the product card..."></textarea>
-        </div>
-        <div class="admin-field">
-          <label>Images (first is primary · drop or click below)</label>
-          <div id="aeDropzone" style="border:2px dashed rgba(255,255,255,0.2);border-radius:10px;padding:14px;text-align:center;color:var(--text-muted);font-size:12px;cursor:pointer;margin-bottom:8px" ondragover="aeDragOver(event)" ondragleave="aeDragLeave(event)" ondrop="aeDrop(event)" onclick="document.getElementById('aeImageFile').click()">
-            Drop images here or click to upload · max 2MB each
-          </div>
-          <input type="file" id="aeImageFile" accept="image/*" multiple onchange="aeHandleFiles(event)" style="display:none">
-          <div style="display:flex;gap:8px;margin-bottom:8px">
-            <input type="text" id="aeImageUrlInput" placeholder="...or paste URL" style="flex:1">
-            <button type="button" class="btn-admin btn-admin-ghost" onclick="aeAddUrl()">Add</button>
-          </div>
-          <div id="aeImagesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px"></div>
-          <input type="hidden" id="aeImages">
-          <input type="hidden" id="aeImage">
-        </div>
-        <div class="admin-row">
-          <div class="admin-field"><label>Sort Order</label><input type="number" id="aeSort" value="0"></div>
-          <div class="admin-field"><label>Status</label><select id="aeActive"><option value="true">Active</option><option value="false">Inactive</option></select></div>
-        </div>
-      </div>
-      <div class="admin-modal-footer">
-        <button class="btn-admin btn-admin-ghost" onclick="closeAdminEdit()">Cancel</button>
-        <button class="btn-admin btn-admin-primary" onclick="saveAdminEdit()">Save</button>
-      </div>
-    </div>
-  </div>
 
   <script>
     var SUPABASE_URL = 'https://mlqcjkyupgayhbbdlttr.supabase.co';
@@ -235,12 +160,7 @@
 
     var allProducts = [];
     var cart = JSON.parse(localStorage.getItem('bambeo_cart') || '[]');
-    // Stored password is only a *candidate* until the server confirms it.
-    // isAdmin stays false until /api/admin accepts the credential on a harmless call.
-    var ADMIN_PW = localStorage.getItem('bambeo_admin_pw') || sessionStorage.getItem('bambeo_admin_pw') || '';
-    var isAdmin = false;
     var VALID_IMG = /^(https?:|data:image\/)/i;
-    var aeImagesDraft = [];
 
     function normalizeImages(p) {
       if (!p) return [];
@@ -302,13 +222,11 @@
         var dots = imgs.length > 1
           ? '<div class="img-dots">' + imgs.map(function(_, i) { return '<span class="' + (i === 0 ? 'active' : '') + '"></span>'; }).join('') + '</div>'
           : '';
-        var adminCtrls = isAdmin
-          ? '<button class="admin-delete-btn" onclick="adminDelete(\'' + safeId + '\')">Delete</button><button class="admin-edit-btn" onclick="openAdminEdit(\'' + safeId + '\')">Edit</button>'
-          : '<button class="add-to-cart-btn" onclick="addToCart(\'' + safeId + '\')">Add to Cart</button>';
+        var cartBtn = '<button class="add-to-cart-btn" onclick="addToCart(\'' + safeId + '\')">Add to Cart</button>';
         var tagHtml = safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '';
         var descHtml = p.description ? '<div class="product-desc">' + esc(p.description) + '</div>' : '';
         return '<div class="product-card">'
-          + '<div class="product-image"' + imageBg + '>' + tagHtml + labelHtml + dots + adminCtrls + '</div>'
+          + '<div class="product-image"' + imageBg + '>' + tagHtml + labelHtml + dots + cartBtn + '</div>'
           + '<div class="product-info">'
           + '<div class="product-name">' + esc(p.name) + '</div>'
           + '<div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div>'
@@ -405,196 +323,10 @@
       .catch(function() { alert('Error connecting to payment.'); });
     }
 
-    // ========== ADMIN FUNCTIONS ==========
-    function adminApi(body) {
-      return fetch('/api/admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ADMIN_PW },
-        body: JSON.stringify(body)
-      }).then(function(r) { return r.json(); });
-    }
-
-    function loadProducts() {
-      if (isAdmin) {
-        // Admin sees all (active + inactive) via admin API
-        adminApi({ table: 'products', action: 'select', data: { select: '*' } }).then(function(res) {
-          var data = res && res.data ? res.data : (Array.isArray(res) ? res : []);
-          allProducts = Array.isArray(data) ? data : [];
-          renderCollection();
-        }).catch(function() {
-          // Fallback: anon read
-          fetchFromSupabase('products').then(function(p) {
-            allProducts = Array.isArray(p) ? p.filter(function(x){return x.is_active!==false;}) : [];
-            renderCollection();
-          });
-        });
-      } else {
-        fetchFromSupabase('products').then(function(products) {
-          allProducts = Array.isArray(products) ? products.filter(function(p){return p.is_active!==false;}) : [];
-          renderCollection();
-        });
-      }
-    }
-
-    function openAdminEdit(productId) {
-      var p = null;
-      if (productId) {
-        for (var i = 0; i < allProducts.length; i++) {
-          if (allProducts[i].id === productId) { p = allProducts[i]; break; }
-        }
-      }
-      document.getElementById('adminEditTitle').textContent = p ? 'Edit Product' : 'Add Product';
-      document.getElementById('aeId').value = p ? p.id : '';
-      document.getElementById('aeName').value = p ? (p.name || '') : '';
-      document.getElementById('aeDisplayText').value = p ? (p.display_text || '') : '';
-      document.getElementById('aePrice').value = p ? (p.price || '') : '';
-      document.getElementById('aeColor').value = p && p.color ? p.color : '#ff66b2';
-      document.getElementById('aeCategory').value = p ? (p.category || getCategoryParam()) : getCategoryParam();
-      document.getElementById('aeTag').value = p ? (p.tag || '') : '';
-      document.getElementById('aeDescription').value = p ? (p.description || '') : '';
-      document.getElementById('aeSort').value = p ? (p.sort_order || 0) : 0;
-      document.getElementById('aeActive').value = (p && p.is_active === false) ? 'false' : 'true';
-      document.getElementById('aeImageFile').value = '';
-      document.getElementById('aeImageUrlInput').value = '';
-      aeImagesDraft = normalizeImages(p);
-      aeRenderGrid();
-      document.getElementById('adminEditModal').classList.add('open');
-    }
-
-    function closeAdminEdit() {
-      document.getElementById('adminEditModal').classList.remove('open');
-    }
-
-    function aeRenderGrid() {
-      var grid = document.getElementById('aeImagesGrid');
-      if (!aeImagesDraft.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;padding:4px 0">No images yet</div>';
-      } else {
-        grid.innerHTML = aeImagesDraft.map(function(url, i) {
-          return '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:#1c1c1c">'
-            + '<img src="' + esc(url) + '" alt="" style="width:100%;height:100%;object-fit:cover">'
-            + (i === 0 ? '<span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.75);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:600">PRIMARY</span>' : '')
-            + '<button type="button" onclick="aeRemove(' + i + ')" title="Remove" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(0,0,0,0.75);color:#fff;cursor:pointer;font-size:12px;line-height:1">×</button>'
-            + (i > 0 ? '<button type="button" onclick="aePromote(' + i + ')" title="Make primary" style="position:absolute;top:4px;left:4px;padding:2px 6px;border-radius:10px;border:none;background:rgba(255,255,255,0.92);color:#000;cursor:pointer;font-size:10px;font-weight:600">Set primary</button>' : '')
-            + '</div>';
-        }).join('');
-      }
-      document.getElementById('aeImages').value = JSON.stringify(aeImagesDraft);
-      document.getElementById('aeImage').value = aeImagesDraft[0] || '';
-    }
-
-    function aeAddUrl() {
-      var input = document.getElementById('aeImageUrlInput');
-      var url = (input.value || '').trim();
-      if (!url) return;
-      if (!VALID_IMG.test(url)) { alert('Only http(s) or data:image URLs allowed'); return; }
-      aeImagesDraft.push(url);
-      input.value = '';
-      aeRenderGrid();
-    }
-
-    function aeRemove(i) { aeImagesDraft.splice(i, 1); aeRenderGrid(); }
-    function aePromote(i) {
-      if (i <= 0 || i >= aeImagesDraft.length) return;
-      var item = aeImagesDraft.splice(i, 1)[0];
-      aeImagesDraft.unshift(item);
-      aeRenderGrid();
-    }
-
-    function aeHandleFiles(e) {
-      aeIngest(Array.from(e.target.files || []));
-      e.target.value = '';
-    }
-
-    function aeIngest(files) {
-      var remaining = files.length;
-      if (!remaining) return;
-      files.forEach(function(f) {
-        if (!f.type || f.type.indexOf('image/') !== 0) { remaining--; if (!remaining) aeRenderGrid(); return; }
-        if (f.size > 2 * 1024 * 1024) { alert('"' + f.name + '" exceeds 2MB, skipped'); remaining--; if (!remaining) aeRenderGrid(); return; }
-        var r = new FileReader();
-        r.onload = function(ev) {
-          aeImagesDraft.push(ev.target.result);
-          remaining--;
-          if (!remaining) aeRenderGrid();
-        };
-        r.onerror = function() { remaining--; if (!remaining) aeRenderGrid(); };
-        r.readAsDataURL(f);
-      });
-    }
-
-    function aeDragOver(e) { e.preventDefault(); e.currentTarget.style.borderColor = '#66d9ff'; }
-    function aeDragLeave(e) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }
-    function aeDrop(e) {
-      e.preventDefault();
-      aeDragLeave(e);
-      var files = Array.from(e.dataTransfer ? e.dataTransfer.files : []);
-      if (files.length) aeIngest(files);
-    }
-
-    function saveAdminEdit() {
-      var id = document.getElementById('aeId').value;
-      var name = document.getElementById('aeName').value.trim();
-      if (!name) { alert('Name is required'); return; }
-      var priceVal = parseFloat(document.getElementById('aePrice').value);
-      var images = aeImagesDraft.slice();
-      var row = {
-        name: name,
-        display_text: document.getElementById('aeDisplayText').value || null,
-        price: isNaN(priceVal) ? 0 : priceVal,
-        color: document.getElementById('aeColor').value,
-        category: document.getElementById('aeCategory').value || null,
-        tag: document.getElementById('aeTag').value || null,
-        description: document.getElementById('aeDescription').value || null,
-        image_urls: images,
-        image_url: images[0] || null,
-        sort_order: parseInt(document.getElementById('aeSort').value, 10) || 0,
-        is_active: document.getElementById('aeActive').value === 'true'
-      };
-      var req = id
-        ? adminApi({ table: 'products', action: 'update', data: { rows: row }, filters: { id: id } })
-        : adminApi({ table: 'products', action: 'insert', data: { rows: row } });
-      req.then(function(res) {
-        if (res && res.error) { alert('Save failed: ' + (res.error.message || res.error)); return; }
-        closeAdminEdit();
-        loadProducts();
-      }).catch(function() { alert('Save failed'); });
-    }
-
-    function adminDelete(id) {
-      if (!confirm('Delete this product?')) return;
-      adminApi({ table: 'products', action: 'delete', filters: { id: id } }).then(function(res) {
-        if (res && res.error) { alert('Delete failed'); return; }
-        loadProducts();
-      }).catch(function() { alert('Delete failed'); });
-    }
-
-    // Server-verify the stored admin password before exposing any admin UI.
-    // If it's missing, expired, or invalid the page renders as pure customer view.
-    function verifyAdmin() {
-      if (!ADMIN_PW) return Promise.resolve(false);
-      return fetch('/api/admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ADMIN_PW },
-        body: JSON.stringify({ table: 'site_settings', action: 'select', data: { select: 'key' } })
-      }).then(function(r) {
-        if (r.status === 200) return true;
-        // Invalid or rate-limited — strip any stale credential to stop further leaks.
-        if (r.status === 401) {
-          localStorage.removeItem('bambeo_admin_pw');
-          sessionStorage.removeItem('bambeo_admin_pw');
-          ADMIN_PW = '';
-        }
-        return false;
-      }).catch(function() { return false; });
-    }
-
-    // Init
-    verifyAdmin().then(function(ok) {
-      isAdmin = ok;
-      var toolbar = document.getElementById('adminToolbar');
-      if (toolbar) toolbar.style.display = ok ? 'block' : 'none';
-      loadProducts();
+    // Init — public storefront only, anon read
+    fetchFromSupabase('products').then(function(products) {
+      allProducts = Array.isArray(products) ? products.filter(function(p){return p.is_active!==false;}) : [];
+      renderCollection();
     });
     updateCartUI();
   </script>
