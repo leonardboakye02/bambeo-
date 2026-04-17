@@ -646,7 +646,10 @@
         const current = select.value;
         select.innerHTML = '<option value="">All categories</option>' +
           cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-        if (cats.includes(current)) select.value = current;
+        // Honor ?cat=X deep-link from client sub-pages, then fall back to whatever was selected
+        const urlCat = new URLSearchParams(location.search).get('cat');
+        if (urlCat && cats.includes(urlCat)) select.value = urlCat;
+        else if (cats.includes(current)) select.value = current;
       }
       renderProductsTable();
     }
@@ -704,7 +707,9 @@
       document.getElementById('productDisplayText').value = p?.display_text || '';
       document.getElementById('productPrice').value = p?.price || '';
       document.getElementById('productColor').value = p?.color || '#ff66b2';
-      document.getElementById('productCategory').value = p?.category || '';
+      // When adding a new product while filtered to a category, pre-fill that category
+      const filterCat = document.getElementById('productCategoryFilter')?.value || '';
+      document.getElementById('productCategory').value = p?.category || filterCat || '';
       document.getElementById('productTag').value = p?.tag || '';
       document.getElementById('productDescription').value = p?.description || '';
       document.getElementById('productSort').value = p?.sort_order || 0;
