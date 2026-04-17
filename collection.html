@@ -235,8 +235,10 @@
 
     var allProducts = [];
     var cart = JSON.parse(localStorage.getItem('bambeo_cart') || '[]');
+    // Stored password is only a *candidate* until the server confirms it.
+    // isAdmin stays false until /api/admin accepts the credential on a harmless call.
     var ADMIN_PW = localStorage.getItem('bambeo_admin_pw') || sessionStorage.getItem('bambeo_admin_pw') || '';
-    var isAdmin = !!ADMIN_PW;
+    var isAdmin = false;
     var VALID_IMG = /^(https?:|data:image\/)/i;
     var aeImagesDraft = [];
 
@@ -567,9 +569,33 @@
       }).catch(function() { alert('Delete failed'); });
     }
 
+    // Server-verify the stored admin password before exposing any admin UI.
+    // If it's missing, expired, or invalid the page renders as pure customer view.
+    function verifyAdmin() {
+      if (!ADMIN_PW) return Promise.resolve(false);
+      return fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ADMIN_PW },
+        body: JSON.stringify({ table: 'site_settings', action: 'select', data: { select: 'key' } })
+      }).then(function(r) {
+        if (r.status === 200) return true;
+        // Invalid or rate-limited — strip any stale credential to stop further leaks.
+        if (r.status === 401) {
+          localStorage.removeItem('bambeo_admin_pw');
+          sessionStorage.removeItem('bambeo_admin_pw');
+          ADMIN_PW = '';
+        }
+        return false;
+      }).catch(function() { return false; });
+    }
+
     // Init
-    if (isAdmin) document.getElementById('adminToolbar').style.display = 'block';
-    loadProducts();
+    verifyAdmin().then(function(ok) {
+      isAdmin = ok;
+      var toolbar = document.getElementById('adminToolbar');
+      if (toolbar) toolbar.style.display = ok ? 'block' : 'none';
+      loadProducts();
+    });
     updateCartUI();
   </script>
 </body>
