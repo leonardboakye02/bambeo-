@@ -143,7 +143,7 @@
   <!-- Live preview of the public site with an admin toolbar over it.
        admin.html's landing view post-login. -->
   <div class="live-preview" id="livePreview">
-    <iframe class="live-frame" id="liveFrame" src="index.html" title="Bambeo live preview"></iframe>
+    <iframe class="live-frame" id="liveFrame" src="/" title="Bambeo live preview" onerror="onFrameError()"></iframe>
     <div class="live-toolbar" id="liveToolbar">
       <div class="lt-title">
         <span><span class="lt-dot"></span>ADMIN · LIVE</span>
@@ -576,8 +576,10 @@
     function reloadPreview() {
       const f = document.getElementById('liveFrame');
       if (!f) return;
-      // Cache-bust so edits appear instantly
-      f.src = 'index.html?t=' + Date.now();
+      // Cache-bust so edits appear instantly. Use current origin so it works
+      // in every environment (Vercel, local file://, localhost).
+      const base = location.origin && location.origin !== 'null' ? location.origin + '/' : 'index.html';
+      f.src = base + '?t=' + Date.now();
     }
     function toggleToolbar() {
       document.getElementById('liveToolbar').classList.toggle('collapsed');
