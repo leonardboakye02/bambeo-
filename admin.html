@@ -108,6 +108,24 @@
     .filter-tabs{display:flex;gap:8px;margin-bottom:24px}
     .filter-tab{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--text-muted)}
     .filter-tab.active{background:var(--accent);color:white;border-color:var(--accent)}
+    /* Live preview: admin.html renders the public site in an iframe with a floating admin toolbar.
+       Identical visual to bambeo-ivory.vercel.app, but every editor control sits on top. */
+    .live-preview{position:fixed;inset:0;background:#0a0a0a;z-index:5;display:none}
+    .live-preview.active{display:block}
+    .live-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#0a0a0a}
+    .live-toolbar{position:fixed;top:16px;right:16px;z-index:10;display:flex;flex-direction:column;gap:8px;background:rgba(17,17,17,0.92);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:14px;padding:12px;min-width:220px;box-shadow:0 12px 40px rgba(0,0,0,0.6)}
+    .live-toolbar .lt-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);padding:4px 4px 2px;display:flex;justify-content:space-between;align-items:center}
+    .live-toolbar .lt-title .lt-dot{width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block;margin-right:6px}
+    .live-toolbar button{width:100%;text-align:left;padding:10px 12px;border-radius:8px;background:transparent;border:1px solid transparent;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,border-color .15s}
+    .live-toolbar button:hover{background:rgba(255,255,255,0.06);border-color:var(--border)}
+    .live-toolbar .lt-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .live-toolbar .lt-primary:hover{background:#5558e3}
+    .live-toolbar .lt-divider{height:1px;background:var(--border);margin:4px 0}
+    .live-toolbar .lt-collapse{background:transparent;border:0;color:var(--text-muted);cursor:pointer;padding:0 4px}
+    .live-toolbar.collapsed > *:not(.lt-title){display:none}
+    .live-toolbar.collapsed{min-width:0}
+    .back-to-preview{margin-bottom:12px;padding:10px 14px;background:var(--accent);color:#fff;border:0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;width:100%}
+    .back-to-preview:hover{background:#5558e3}
   </style>
 </head>
 <body>
@@ -122,9 +140,31 @@
     </div>
   </div>
 
+  <!-- Live preview of the public site with an admin toolbar over it.
+       admin.html's landing view post-login. -->
+  <div class="live-preview" id="livePreview">
+    <iframe class="live-frame" id="liveFrame" src="index.html" title="Bambeo live preview"></iframe>
+    <div class="live-toolbar" id="liveToolbar">
+      <div class="lt-title">
+        <span><span class="lt-dot"></span>ADMIN · LIVE</span>
+        <button class="lt-collapse" onclick="toggleToolbar()" title="Collapse">—</button>
+      </div>
+      <button class="lt-primary" onclick="enterAdmin('products')">✏️ Panels &amp; Products</button>
+      <button onclick="enterAdmin('testimonials')">⭐ Testimonials</button>
+      <button onclick="enterAdmin('faqs')">❓ FAQs</button>
+      <button onclick="enterAdmin('settings')">⚙️ Settings</button>
+      <button onclick="enterAdmin('quotes')">💬 Quote Requests</button>
+      <div class="lt-divider"></div>
+      <button onclick="enterAdmin('dashboard')">📊 Full Dashboard</button>
+      <button onclick="reloadPreview()">↻ Reload preview</button>
+      <button onclick="logout()">🚪 Logout</button>
+    </div>
+  </div>
+
   <div class="admin-layout" id="adminLayout">
     <aside class="sidebar">
       <div class="sidebar-logo">🎨 Bambeo</div>
+      <button class="back-to-preview" onclick="exitAdmin()">← Back to Live Preview</button>
       <nav class="sidebar-nav">
         <button class="nav-item active" onclick="showPage('dashboard')">📊 Dashboard</button>
         <button class="nav-item" onclick="showPage('quotes')" id="quotesNav">💬 Quote Requests <span class="nav-badge" id="newQuotesCount" style="display:none">0</span></button>
@@ -394,8 +434,7 @@
         });
         if (res.ok) {
           document.getElementById('loginScreen').style.display = 'none';
-          document.getElementById('adminLayout').classList.add('active');
-          loadDashboard();
+          enterPreviewMode();
         } else {
           localStorage.removeItem('bambeo_admin_pw');
           adminPassword = '';
@@ -490,8 +529,8 @@
           localStorage.setItem('bambeo_admin_pw', password);
           initSupabase();
           document.getElementById('loginScreen').style.display = 'none';
-          document.getElementById('adminLayout').classList.add('active');
-          loadDashboard();
+          // Land on the live preview so admin.html looks identical to the public site
+          enterPreviewMode();
         } else {
           showToast('Invalid password', 'error');
         }
@@ -506,14 +545,57 @@
       supabase = null;
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('adminLayout').classList.remove('active');
+      document.getElementById('livePreview').classList.remove('active');
       document.getElementById('passwordInput').value = '';
+    }
+
+    // ========== LIVE PREVIEW MODE ==========
+    // admin.html shows the public site in an iframe with a floating toolbar.
+    // Clicking a toolbar button swaps to the existing admin dashboard for that section.
+    function enterPreviewMode() {
+      document.getElementById('adminLayout').classList.remove('active');
+      document.getElementById('livePreview').classList.add('active');
+      // Kick off background data load so stats/lists are ready when user enters admin
+      initSupabase();
+      loadDashboard();
+    }
+    function enterAdmin(page) {
+      document.getElementById('livePreview').classList.remove('active');
+      document.getElementById('adminLayout').classList.add('active');
+      // Mimic a nav click so showPage's `.active` highlighting still works
+      const nav = Array.from(document.querySelectorAll('.sidebar .nav-item'))
+        .find(n => n.getAttribute('onclick') === `showPage('${page}')`);
+      if (nav) nav.click();
+      else showPage(page);
+    }
+    function exitAdmin() {
+      document.getElementById('adminLayout').classList.remove('active');
+      document.getElementById('livePreview').classList.add('active');
+      reloadPreview();
+    }
+    function reloadPreview() {
+      const f = document.getElementById('liveFrame');
+      if (!f) return;
+      // Cache-bust so edits appear instantly
+      f.src = 'index.html?t=' + Date.now();
+    }
+    function toggleToolbar() {
+      document.getElementById('liveToolbar').classList.toggle('collapsed');
     }
 
     function showPage(page) {
       document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       document.getElementById(`page-${page}`).classList.add('active');
-      event.target.classList.add('active');
+      // When called programmatically (no click event), highlight the matching nav item directly
+      const evtTarget = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
+      if (evtTarget && evtTarget.classList && evtTarget.classList.contains('nav-item')) {
+        evtTarget.classList.add('active');
+      } else {
+        const match = Array.from(document.querySelectorAll('.sidebar .nav-item'))
+          .find(n => (n.getAttribute('onclick') || '').includes(`'${page}'`));
+        if (match) match.classList.add('active');
+      }
       if (page === 'dashboard') loadDashboard();
       if (page === 'quotes') loadQuotes();
       if (page === 'products') {
