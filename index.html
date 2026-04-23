@@ -504,8 +504,22 @@
       if (!grid || !products || !products.length) return;
       var active = products.filter(function(p) { return p.is_active !== false; }).sort(function(a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
       allProducts = active;
-      grid.innerHTML = active.map(function(p) {
-        var safeId = esc(p.id);
+
+      // One tile per panel (category). The first product in each category
+      // represents the panel on the homepage; clicking opens the collection
+      // sub-page where every product in that panel is listed.
+      var seen = {};
+      var panels = [];
+      for (var i = 0; i < active.length; i++) {
+        var p = active[i];
+        var key = (p.category || '').toLowerCase();
+        if (!key) continue;
+        if (!seen[key]) { seen[key] = true; panels.push(p); }
+      }
+      if (!panels.length) panels = active.slice(0, 1); // fallback: uncategorized
+
+      grid.innerHTML = panels.map(function(p) {
+        var safeCat = esc(p.category || '');
         var safeTag = (p.tag === 'best' || p.tag === 'new') ? p.tag : '';
         var imgList = [];
         if (Array.isArray(p.image_urls)) imgList = p.image_urls;
@@ -514,8 +528,15 @@
         var imgUrl = imgList.find(function(u){ return u && /^(https?:|data:image\/)/i.test(u); }) || '';
         var imageBg = imgUrl ? ' style="background-image:url(\'' + esc(imgUrl) + '\');background-size:cover;background-position:center;padding:0"' : '';
         var labelHtml = imgUrl ? '' : '<span style="color:' + escColor(p.color) + '">' + esc(p.display_text || p.name) + '</span>';
-        return '<div class="product-card" onclick="openCatalog(\'' + safeId + '\')"><div class="product-image"' + imageBg + '>' + (safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '') + labelHtml + '</div><div class="product-info"><div class="product-name">' + esc(p.name) + '</div><div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div></div></div>';
+        // Capitalize category name for display
+        var panelName = (p.category || '').replace(/(^|\s|-|_)([a-z])/g, function(m, s, c){ return s + c.toUpperCase(); });
+        return '<div class="product-card" onclick="openPanel(\'' + safeCat + '\')"><div class="product-image"' + imageBg + '>' + (safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '') + labelHtml + '</div><div class="product-info"><div class="product-name">' + esc(panelName) + '</div><div class="product-price"><strong>$' + esc(String(p.price)) + '</strong><span>From</span></div></div></div>';
       }).join('');
+    }
+
+    function openPanel(cat) {
+      if (!cat) return;
+      window.location.href = '/collection.html?cat=' + encodeURIComponent(cat);
     }
 
     function openCatalog(productId) {
