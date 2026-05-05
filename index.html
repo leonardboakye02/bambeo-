@@ -428,8 +428,12 @@
   </div>
 
   <script>
-    var SUPABASE_URL = 'https://mlqcjkyupgayhbbdlttr.supabase.co';
-    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1scWNqa3l1cGdheWhiYmRsdHRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjUzMDIsImV4cCI6MjA5MTI0MTMwMn0.LI3Lk7b1RgntGIEI0doBpZqcRuayN6Gti4ygFFfJ1vY';
+    var SUPABASE_URL = '';
+    var SUPABASE_KEY = '';
+    var __configReady = fetch('/api/config').then(function(r){ return r.json(); }).then(function(c){
+      SUPABASE_URL = c.supabaseUrl || '';
+      SUPABASE_KEY = c.supabaseAnonKey || '';
+    }).catch(function(){});
     
     var BASE_PRICE = 79;
     var PRICE_PER_CHAR = 6;
@@ -468,17 +472,21 @@
     });
 
     function fetchFromSupabase(table) {
-      return fetch(SUPABASE_URL + '/rest/v1/' + table + '?select=*', {
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
-      }).then(function(res) { return res.json(); }).catch(function(e) { console.error('Supabase error:', e); return null; });
+      return __configReady.then(function() {
+        return fetch(SUPABASE_URL + '/rest/v1/' + table + '?select=*', {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+        }).then(function(res) { return res.json(); });
+      }).catch(function(e) { console.error('Supabase error:', e); return null; });
     }
-    
+
     function saveToSupabase(table, data) {
-      return fetch(SUPABASE_URL + '/rest/v1/' + table, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-        body: JSON.stringify(data)
-      }).then(function(res) { return res.json(); }).catch(function(e) { console.error('Save error:', e); return null; });
+      return __configReady.then(function() {
+        return fetch(SUPABASE_URL + '/rest/v1/' + table, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+          body: JSON.stringify(data)
+        }).then(function(res) { return res.json(); });
+      }).catch(function(e) { console.error('Save error:', e); return null; });
     }
 
     function loadSiteData() {

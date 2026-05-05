@@ -445,12 +445,18 @@
       }
     }
 
-    // XSS sanitization
+    // XSS sanitization. Returns a string safe for both element TEXT and
+    // double/single-quoted ATTRIBUTE contexts. textContent->innerHTML escapes
+    // <, >, & but NOT quotes — so we must encode them explicitly.
     function esc(str) {
-      if (!str) return '';
-      const div = document.createElement('div');
-      div.appendChild(document.createTextNode(String(str)));
-      return div.innerHTML;
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/`/g, '&#96;');
     }
     function escColor(c) {
       if (!c) return '#fff';
@@ -679,10 +685,10 @@
             <div class="quote-detail"><strong>Color</strong><span class="color-swatch" style="background:${escColor(q.design_color)}"></span></div>
           </div>
           ${q.message ? `<div class="quote-message">${esc(q.message)}</div>` : ''}
-          ${q.design_image && q.design_image.startsWith('data:image/') ? `<div class="quote-design"><img src="${esc(q.design_image)}" alt="Design"></div>` : ''}
+          ${q.design_image && /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/i.test(q.design_image) ? `<div class="quote-design"><img src="${esc(q.design_image)}" alt="Design"></div>` : ''}
           <div class="quote-actions">
             <button class="btn btn-ghost btn-sm" onclick="viewQuote('${esc(q.id)}')">View Details</button>
-            <a href="mailto:${encodeURI(q.email)}" class="btn btn-primary btn-sm">Email Customer</a>
+            <a href="mailto:${esc(encodeURIComponent(q.email || ''))}" class="btn btn-primary btn-sm">Email Customer</a>
             ${safeStatus(q.status) === 'new' ? `<button class="btn btn-warning btn-sm" onclick="quickUpdateStatus('${esc(q.id)}','contacted')">Mark Contacted</button>` : ''}
             ${safeStatus(q.status) === 'contacted' ? `<button class="btn btn-success btn-sm" onclick="quickUpdateStatus('${esc(q.id)}','completed')">Mark Completed</button>` : ''}
             ${safeStatus(q.status) === 'completed' ? `<button class="btn btn-danger btn-sm" onclick="deleteQuote('${esc(q.id)}')">Remove</button>` : ''}
@@ -752,7 +758,9 @@
     // Data layer: window._adminProducts holds the last full list from Supabase.
     // UI rendering reads from there and applies category + search filters client-side.
 
-    const VALID_IMG = /^(https?:|data:image\/)/i;
+    // Accept only http(s) and raster data URLs. SVG is excluded because it
+    // can contain <script> and would execute as stored XSS in some contexts.
+    const VALID_IMG = /^(https?:\/\/|data:image\/(png|jpe?g|gif|webp);)/i;
     let productImagesDraft = []; // Array of image URLs being edited in the modal
 
     function normalizeImages(p) {
