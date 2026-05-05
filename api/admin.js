@@ -14,12 +14,12 @@ const ALLOWED_ACTIONS = ['select', 'insert', 'update', 'delete', 'upsert'];
 
 // Per-table column whitelists for filters and select projections
 const ALLOWED_COLUMNS = {
-  products:        ['id', 'name', 'category', 'price', 'description', 'image_url', 'image_urls', 'is_active', 'created_at', 'updated_at', 'sort_order'],
-  gallery:         ['id', 'title', 'image_url', 'is_active', 'created_at', 'sort_order'],
-  testimonials:    ['id', 'name', 'text', 'rating', 'is_active', 'created_at', 'sort_order'],
-  faqs:            ['id', 'question', 'answer', 'is_active', 'created_at', 'sort_order'],
-  site_settings:   ['id', 'key', 'value', 'updated_at'],
-  quote_requests:  ['id', 'name', 'email', 'phone', 'message', 'design_image', 'status', 'created_at']
+  products:        ['id', 'name', 'display_text', 'category', 'price', 'color', 'tag', 'description', 'image_url', 'image_urls', 'is_active', 'sort_order', 'created_at', 'updated_at'],
+  gallery:         ['id', 'title', 'image_url', 'image_urls', 'description', 'is_active', 'sort_order', 'created_at', 'updated_at'],
+  testimonials:    ['id', 'author_name', 'review_text', 'rating', 'is_active', 'sort_order', 'created_at', 'updated_at'],
+  faqs:            ['id', 'question', 'answer', 'is_active', 'sort_order', 'created_at', 'updated_at'],
+  site_settings:   ['id', 'key', 'value', 'created_at', 'updated_at'],
+  quote_requests:  ['id', 'name', 'email', 'phone', 'message', 'design_image', 'design_style', 'status', 'created_at', 'updated_at']
 };
 
 // Identifier validation: alphanum + underscore only (PostgREST column names)
