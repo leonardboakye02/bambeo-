@@ -100,9 +100,10 @@ function validateColumns(table, cols) {
 }
 
 function buildSelect(table, raw) {
-  if (!raw || raw === '*') {
-    return ALLOWED_COLUMNS[table].join(',');
-  }
+  // Wildcard: let PostgREST return whatever columns the table actually has.
+  // We rely on RLS + table whitelist to keep things safe; admin_password is
+  // separately filtered via the &key=neq.admin_password rule below.
+  if (!raw || raw === '*') return '*';
   const cols = String(raw).split(',').map(c => c.trim()).filter(Boolean);
   if (!validateColumns(table, cols)) return null;
   return cols.join(',');
