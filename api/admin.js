@@ -29,8 +29,8 @@ const ALLOWED_COLUMNS = {
 // Identifier validation: alphanum + underscore only (PostgREST column names)
 const IDENT_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
-// Max JSON payload (Vercel default ~1mb but be defensive)
-const MAX_BODY_BYTES = 256 * 1024;
+// Max JSON payload (Vercel caps at ~4.5mb for serverless)
+const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
 // scrypt password hashing with random salt; format: scrypt$<saltHex>$<hashHex>
 function hashPassword(password) {
