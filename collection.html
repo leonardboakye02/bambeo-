@@ -34,7 +34,7 @@
     .back-link:hover{color:var(--text)}
     section{padding:60px 24px 100px}
     .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
-    .product-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:all 0.3s}
+    .product-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:all 0.3s;cursor:pointer}
     .product-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,0.12)}
     .product-image{aspect-ratio:1;background:#111;display:flex;align-items:center;justify-content:center;padding:24px;position:relative}
     .product-image span{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;text-align:center}
@@ -228,10 +228,10 @@
         var dots = imgs.length > 1
           ? '<div class="img-dots">' + imgs.map(function(_, i) { return '<span class="' + (i === 0 ? 'active' : '') + '"></span>'; }).join('') + '</div>'
           : '';
-        var cartBtn = '<button class="add-to-cart-btn" onclick="addToCart(\'' + safeId + '\')">Add to Cart</button>';
+        var cartBtn = '<button class="add-to-cart-btn" onclick="event.stopPropagation();addToCart(\'' + safeId + '\')">Add to Cart</button>';
         var tagHtml = safeTag ? '<span class="product-tag ' + safeTag + '">' + (safeTag === 'best' ? 'Best' : 'New') + '</span>' : '';
         var descHtml = p.description ? '<div class="product-desc">' + esc(p.description) + '</div>' : '';
-        return '<div class="product-card">'
+        return '<div class="product-card" onclick="window.location.href=\'/product.html?id=' + safeId + '\'">'
           + '<div class="product-image"' + imageBg + '>' + tagHtml + labelHtml + dots + cartBtn + '</div>'
           + '<div class="product-info">'
           + '<div class="product-name">' + esc(p.name) + '</div>'
