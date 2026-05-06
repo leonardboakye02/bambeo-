@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const crypto = require('crypto');
+const { rateLimit, clientIp } = require('../lib/rate-limit');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -10,19 +11,6 @@ const ALLOWED_ORIGINS = [
   'https://bambeo-leonardboakye02s-projects.vercel.app',
   'https://bambeo-git-main-leonardboakye02s-projects.vercel.app'
 ];
-
-// Basic in-memory rate limiting (per serverless instance — replace with KV in prod)
-const rateMap = new Map();
-function rateLimit(ip, maxRequests = 10, windowMs = 60000) {
-  const now = Date.now();
-  const entry = rateMap.get(ip);
-  if (!entry || now - entry.start > windowMs) {
-    rateMap.set(ip, { start: now, count: 1 });
-    return true;
-  }
-  entry.count++;
-  return entry.count <= maxRequests;
-}
 
 // UUID v4-ish or integer id validator (matches Supabase default ID shapes)
 const ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
@@ -50,8 +38,8 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Server not configured' });
   }
 
-  const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
-  if (!rateLimit(clientIp)) {
+  const ip = clientIp(req);
+  if (!await rateLimit({ key: `checkout:${ip}`, max: 10, windowSec: 60 })) {
     return res.status(429).json({ error: 'Too many requests, please try again later' });
   }
 
@@ -126,7 +114,7 @@ module.exports = async (req, res) => {
     // Idempotency key prevents duplicate Stripe sessions on client retries
     const idempotencyKey = crypto
       .createHash('sha256')
-      .update(JSON.stringify({ ip: clientIp, items, email: customerEmail || '', t: Math.floor(Date.now() / 5000) }))
+      .update(JSON.stringify({ ip, items, email: customerEmail || '', t: Math.floor(Date.now() / 5000) }))
       .digest('hex');
 
     const session = await stripe.checkout.sessions.create(

@@ -4,7 +4,8 @@
 // Safe to run repeatedly. Useful when a webhook event was missed.
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const crypto = require('crypto');
+const { authenticate } = require('../lib/auth');
+const { rateLimit, clientIp } = require('../lib/rate-limit');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -14,37 +15,6 @@ const ALLOWED_ORIGINS = [
   'https://bambeo-leonardboakye02s-projects.vercel.app',
   'https://bambeo-git-main-leonardboakye02s-projects.vercel.app'
 ];
-
-function sha256(s) { return crypto.createHash('sha256').update(s).digest('hex'); }
-function timingSafeStringEq(a, b) {
-  const ab = Buffer.from(String(a));
-  const bb = Buffer.from(String(b));
-  if (ab.length !== bb.length) return false;
-  return crypto.timingSafeEqual(ab, bb);
-}
-function verifyScrypt(password, stored) {
-  try {
-    const parts = stored.split('$');
-    if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
-    const salt = Buffer.from(parts[1], 'hex');
-    const expected = Buffer.from(parts[2], 'hex');
-    const derived = crypto.scryptSync(password, salt, expected.length, { N: 16384, r: 8, p: 1 });
-    return crypto.timingSafeEqual(derived, expected);
-  } catch { return false; }
-}
-async function verifyAdmin(password) {
-  if (!password) return false;
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/site_settings?key=eq.admin_password&select=value`,
-    { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
-  );
-  const data = await res.json();
-  const stored = Array.isArray(data) && data[0]?.value;
-  if (!stored) return false;
-  if (stored.startsWith('scrypt$')) return verifyScrypt(password, stored);
-  if (/^[a-f0-9]{64}$/.test(stored)) return timingSafeStringEq(sha256(password), stored);
-  return false;
-}
 
 async function listOrders() {
   const url = `${SUPABASE_URL}/rest/v1/orders?select=id,stripe_payment_id,status,refunded_amount,dispute_status&stripe_payment_id=not.is.null`;
@@ -70,7 +40,6 @@ async function patchOrder(id, patch) {
 }
 
 function reconcile(charge) {
-  // Map Stripe charge state -> our order status + fields
   const refunded = charge.amount_refunded || 0;
   const total    = charge.amount || 0;
   const out = {
@@ -108,6 +77,7 @@ module.exports = async (req, res) => {
   const isAllowedOrigin = origin && ALLOWED_ORIGINS.includes(origin);
   if (isAllowedOrigin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Vary', 'Origin');
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -120,8 +90,13 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Server not configured' });
   }
 
-  const password = (req.headers.authorization || '').replace('Bearer ', '');
-  if (!(await verifyAdmin(password))) return res.status(401).json({ error: 'Invalid password' });
+  const ip = clientIp(req);
+  if (!await rateLimit({ key: `sync:${ip}`, max: 6, windowSec: 60 })) {
+    return res.status(429).json({ error: 'Too many sync attempts' });
+  }
+
+  const auth = await authenticate(req);
+  if (!auth.ok) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     const orders = await listOrders();

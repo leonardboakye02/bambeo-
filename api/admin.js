@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const { authenticate, verifyPassword } = require('../lib/auth');
+const { rateLimit, clientIp } = require('../lib/rate-limit');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -29,68 +31,11 @@ const IDENT_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 // Max JSON payload (Vercel default ~1mb but be defensive)
 const MAX_BODY_BYTES = 256 * 1024;
 
-// Rate limit failed login attempts: 5 per minute per IP (in-memory; replace with KV in prod)
-const failMap = new Map();
-function checkLoginRate(ip) {
-  const now = Date.now();
-  const entry = failMap.get(ip);
-  if (!entry || now - entry.start > 60000) {
-    failMap.set(ip, { start: now, count: 0 });
-    return true;
-  }
-  return entry.count < 5;
-}
-function recordFailure(ip) {
-  const entry = failMap.get(ip);
-  if (entry) entry.count++;
-}
-
 // scrypt password hashing with random salt; format: scrypt$<saltHex>$<hashHex>
 function hashPassword(password) {
   const salt = crypto.randomBytes(16);
   const derived = crypto.scryptSync(password, salt, 64, { N: 16384, r: 8, p: 1 });
   return `scrypt$${salt.toString('hex')}$${derived.toString('hex')}`;
-}
-function verifyScrypt(password, stored) {
-  try {
-    const parts = stored.split('$');
-    if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
-    const salt = Buffer.from(parts[1], 'hex');
-    const expected = Buffer.from(parts[2], 'hex');
-    const derived = crypto.scryptSync(password, salt, expected.length, { N: 16384, r: 8, p: 1 });
-    return crypto.timingSafeEqual(derived, expected);
-  } catch {
-    return false;
-  }
-}
-function timingSafeStringEq(a, b) {
-  const ab = Buffer.from(String(a));
-  const bb = Buffer.from(String(b));
-  if (ab.length !== bb.length) return false;
-  return crypto.timingSafeEqual(ab, bb);
-}
-
-async function fetchStoredPassword() {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/site_settings?key=eq.admin_password&select=value`,
-    { headers: { 'apikey': SUPABASE_SERVICE_KEY, 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } }
-  );
-  const data = await res.json();
-  if (!Array.isArray(data) || !data[0]?.value) return null;
-  return data[0].value;
-}
-
-async function verifyPassword(password) {
-  const stored = await fetchStoredPassword();
-  if (!stored) return false;
-  if (stored.startsWith('scrypt$')) return verifyScrypt(password, stored);
-  // Legacy sha256 hex (no salt) — still supported with timing-safe compare; will be migrated on next password change
-  if (/^[a-f0-9]{64}$/.test(stored)) {
-    const candidate = crypto.createHash('sha256').update(password).digest('hex');
-    return timingSafeStringEq(candidate, stored);
-  }
-  // Plaintext fallback removed for security. Block.
-  return false;
 }
 
 function validateColumns(table, cols) {
@@ -153,9 +98,10 @@ module.exports = async (req, res) => {
   const origin = req.headers.origin;
   const isAllowedOrigin = origin && ALLOWED_ORIGINS.includes(origin);
 
-  // CORS — only echo allowed origins
+  // CORS — only echo allowed origins. Credentials needed for cookie-based auth.
   if (isAllowedOrigin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Vary', 'Origin');
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -174,21 +120,16 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
-    if (!checkLoginRate(clientIp)) {
-      return res.status(429).json({ error: 'Too many attempts, try again later' });
+    const ip = clientIp(req);
+    if (!await rateLimit({ key: `admin:${ip}`, max: 60, windowSec: 60 })) {
+      return res.status(429).json({ error: 'Too many requests, try again later' });
     }
 
-    const password = (req.headers.authorization || '').replace('Bearer ', '');
-    if (!password || password.length > 256) {
-      recordFailure(clientIp);
+    const auth = await authenticate(req);
+    if (!auth.ok) {
+      // Per-IP slow-down for failed auth attempts (separate stricter bucket)
+      await rateLimit({ key: `admin-fail:${ip}`, max: 10, windowSec: 60 });
       return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const valid = await verifyPassword(password);
-    if (!valid) {
-      recordFailure(clientIp);
-      return res.status(401).json({ error: 'Invalid password' });
     }
 
     const parsed = readJsonBody(req);

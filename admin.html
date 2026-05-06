@@ -431,37 +431,33 @@
   <script>
     const ADMIN_API = '/api/admin';
     let supabase = null;
-    let adminPassword = localStorage.getItem('bambeo_admin_pw') || '';
     let allQuotes = [];
     let currentQuoteId = null;
     let currentFilter = 'all';
 
+    // Auth is now cookie-based (HttpOnly). The cookie travels automatically with
+    // credentials: 'include'. JS can't read the session token (XSS-resistant).
+    // On load we probe the API; if the cookie is still valid we go straight in.
+
     window.onload = () => {
-      // Auto-login if session still valid
-      if (adminPassword) {
-        initSupabase();
-        verifySession();
-      }
+      verifySession();
     };
 
     async function verifySession() {
       try {
         const res = await fetch(ADMIN_API, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminPassword },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ table: 'site_settings', action: 'select', data: { select: 'key' } })
         });
         if (res.ok) {
+          initSupabase();
           document.getElementById('loginScreen').style.display = 'none';
           enterPreviewMode();
-        } else {
-          localStorage.removeItem('bambeo_admin_pw');
-          adminPassword = '';
         }
-      } catch (e) {
-        localStorage.removeItem('bambeo_admin_pw');
-        adminPassword = '';
-      }
+        // Else: no valid session, leave login screen visible (default state)
+      } catch (e) { /* leave login screen visible */ }
     }
 
     // XSS sanitization. Returns a string safe for both element TEXT and
@@ -491,20 +487,23 @@
     }
 
     function initSupabase() {
-      if (!adminPassword) return false;
-      const authHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminPassword };
+      const baseOpts = {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      };
       supabase = {
         from: (table) => ({
           select: async (cols = '*') => {
             const res = await fetch(ADMIN_API, {
-              method: 'POST', headers: authHeaders,
+              ...baseOpts,
               body: JSON.stringify({ table, action: 'select', data: { select: cols } })
             });
             return await res.json();
           },
           insert: async (rows) => {
             const res = await fetch(ADMIN_API, {
-              method: 'POST', headers: authHeaders,
+              ...baseOpts,
               body: JSON.stringify({ table, action: 'insert', data: { rows } })
             });
             return await res.json();
@@ -512,7 +511,7 @@
           update: (row) => ({
             eq: async (col, val) => {
               const res = await fetch(ADMIN_API, {
-                method: 'POST', headers: authHeaders,
+                ...baseOpts,
                 body: JSON.stringify({ table, action: 'update', data: { rows: row }, filters: { [col]: val } })
               });
               return await res.json();
@@ -521,7 +520,7 @@
           delete: () => ({
             eq: async (col, val) => {
               const res = await fetch(ADMIN_API, {
-                method: 'POST', headers: authHeaders,
+                ...baseOpts,
                 body: JSON.stringify({ table, action: 'delete', filters: { [col]: val } })
               });
               return await res.json();
@@ -529,7 +528,7 @@
           }),
           upsert: async (rows) => {
             const res = await fetch(ADMIN_API, {
-              method: 'POST', headers: authHeaders,
+              ...baseOpts,
               body: JSON.stringify({ table, action: 'upsert', data: { rows } })
             });
             return await res.json();
@@ -542,31 +541,36 @@
     async function login() {
       const password = document.getElementById('passwordInput').value;
       if (!password) { showToast('Enter a password', 'error'); return; }
-
       try {
-        const res = await fetch(ADMIN_API, {
+        const res = await fetch('/api/admin-login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + password },
-          body: JSON.stringify({ table: 'site_settings', action: 'select', data: { select: 'key' } })
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
         });
         if (res.ok) {
-          adminPassword = password;
-          localStorage.setItem('bambeo_admin_pw', password);
+          // Clean up any old localStorage password (now unused)
+          localStorage.removeItem('bambeo_admin_pw');
           initSupabase();
           document.getElementById('loginScreen').style.display = 'none';
-          // Land on the live preview so admin.html looks identical to the public site
           enterPreviewMode();
         } else {
-          showToast('Invalid password', 'error');
+          const j = await res.json().catch(() => ({}));
+          showToast(j.error || 'Invalid password', 'error');
         }
       } catch (e) {
         showToast('Server error — check deployment', 'error');
       }
     }
 
-    function logout() {
+    async function logout() {
+      try {
+        await fetch('/api/admin-logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+      } catch (e) { /* ignore — clear UI regardless */ }
       localStorage.removeItem('bambeo_admin_pw');
-      adminPassword = '';
       supabase = null;
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('adminLayout').classList.remove('active');
@@ -1275,7 +1279,8 @@
       try {
         const res = await fetch('/api/sync-orders', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminPassword }
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
         });
         const j = await res.json();
         if (!res.ok) {
