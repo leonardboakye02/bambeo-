@@ -61,7 +61,9 @@
     .product-price-note{font-size:13px;color:var(--text-dim)}
     .divider{height:1px;background:var(--border)}
     .product-description{color:var(--text-muted);font-size:15px;line-height:1.7}
-    .product-details-block{margin-top:4px}
+    .product-description p{margin:0 0 16px 0}
+    .product-description p:last-child{margin-bottom:0}
+    .product-details-block{margin-top:8px;margin-bottom:16px}
     .details-heading{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:14px}
     .product-details-list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0}
     .product-details-list li{color:var(--text-muted);font-size:14px;padding-left:16px;position:relative;list-style:none;line-height:1.5}
@@ -273,9 +275,17 @@
       }
 
       // Description & details
-      var descHtml = product.description
-        ? '<div class="product-description">' + esc(product.description) + '</div>'
-        : '';
+      var descHtml = '';
+      if (product.description) {
+        var paras = product.description.split(/\n\s*\n/).filter(function(p) { return p.trim(); });
+        if (paras.length > 1) {
+          descHtml = '<div class="product-description">' +
+            paras.map(function(p) { return '<p>' + esc(p.trim()) + '</p>'; }).join('') +
+            '</div>';
+        } else {
+          descHtml = '<div class="product-description"><p>' + esc(product.description.trim()) + '</p></div>';
+        }
+      }
 
       var detailsHtml = '';
       if (product.product_details) {
