@@ -272,7 +272,13 @@
 
       <!-- Orders -->
       <div class="page-section" id="page-orders">
-        <div class="page-header"><h1 class="page-title">Orders</h1><button class="btn btn-ghost" onclick="loadOrders()">↻ Refresh</button></div>
+        <div class="page-header">
+          <h1 class="page-title">Orders</h1>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" id="syncOrdersBtn" onclick="syncOrders()">⟳ Sync with Stripe</button>
+            <button class="btn btn-ghost" onclick="loadOrders()">↻ Refresh</button>
+          </div>
+        </div>
         <div class="card">
           <table class="data-table">
             <thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Stripe</th></tr></thead>
@@ -1259,6 +1265,32 @@
         const el = document.getElementById(`setting-${s.key}`);
         if (el) el.value = s.value || '';
       });
+    }
+
+    async function syncOrders() {
+      const btn = document.getElementById('syncOrdersBtn');
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '⟳ Syncing…';
+      try {
+        const res = await fetch('/api/sync-orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminPassword }
+        });
+        const j = await res.json();
+        if (!res.ok) {
+          showToast('Sync failed: ' + (j.error || res.status), 'error');
+        } else {
+          const msg = `Scanned ${j.scanned}, updated ${j.updated}` + (j.errors ? `, ${j.errors} errors` : '');
+          showToast(msg, j.updated > 0 ? 'success' : 'info');
+          if (j.updated > 0) await loadOrders();
+        }
+      } catch (e) {
+        showToast('Sync error: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
     }
 
     async function loadOrders() {
