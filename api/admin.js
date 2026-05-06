@@ -256,7 +256,9 @@ module.exports = async (req, res) => {
       }
       case 'update': {
         method = 'PATCH';
-        const rows = sanitizeRows(table, data?.rows);
+        // Client may send a single row object or an array of one — normalize.
+        const rawRows = Array.isArray(data?.rows) ? data.rows : (data?.rows ? [data.rows] : []);
+        const rows = sanitizeRows(table, rawRows);
         if (!rows || rows.length !== 1) return res.status(400).json({ error: 'Invalid rows' });
         const f = buildFilters(table, filters);
         if (!f.ok || !f.qs) return res.status(400).json({ error: f.error || 'Filters required for update' });

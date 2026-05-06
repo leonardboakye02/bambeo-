@@ -1266,11 +1266,14 @@
       tbody.innerHTML = '<tr><td colspan="6" class="loading"><div class="spinner"></div>Loading...</td></tr>';
       const { data, error } = await supabase
         .from('orders')
-        .select('id,created_at,customer_name,customer_email,line_items,amount_total,currency,status,refunded_amount,dispute_status,stripe_session_id,stripe_payment_id')
-        .order('created_at', { ascending: false });
+        .select('id,created_at,customer_name,customer_email,line_items,amount_total,currency,status,refunded_amount,dispute_status,stripe_session_id,stripe_payment_id');
       if (error) {
         tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error loading orders</td></tr>';
         return;
+      }
+      if (Array.isArray(data)) {
+        // Newest first
+        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       }
       if (!data || data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No orders yet</td></tr>';
