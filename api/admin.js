@@ -9,7 +9,7 @@ const ALLOWED_ORIGINS = [
   'https://bambeo-git-main-leonardboakye02s-projects.vercel.app'
 ];
 
-const ALLOWED_TABLES = ['products', 'gallery', 'testimonials', 'faqs', 'site_settings', 'quote_requests'];
+const ALLOWED_TABLES = ['products', 'gallery', 'testimonials', 'faqs', 'site_settings', 'quote_requests', 'orders'];
 const ALLOWED_ACTIONS = ['select', 'insert', 'update', 'delete', 'upsert'];
 
 // Per-table column whitelists for filters and select projections
@@ -19,7 +19,8 @@ const ALLOWED_COLUMNS = {
   testimonials:    ['id', 'author_name', 'review_text', 'rating', 'is_active', 'sort_order', 'created_at', 'updated_at'],
   faqs:            ['id', 'question', 'answer', 'is_active', 'sort_order', 'created_at', 'updated_at'],
   site_settings:   ['id', 'key', 'value', 'created_at', 'updated_at'],
-  quote_requests:  ['id', 'name', 'email', 'phone', 'message', 'design_image', 'design_style', 'status', 'created_at', 'updated_at']
+  quote_requests:  ['id', 'name', 'email', 'phone', 'message', 'design_image', 'design_style', 'status', 'created_at', 'updated_at'],
+  orders:          ['id', 'stripe_session_id', 'stripe_payment_id', 'customer_email', 'customer_name', 'amount_total', 'currency', 'status', 'line_items', 'shipping_address', 'billing_address', 'refunded_amount', 'dispute_status', 'created_at', 'updated_at']
 };
 
 // Identifier validation: alphanum + underscore only (PostgREST column names)

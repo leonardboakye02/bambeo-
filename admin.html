@@ -154,6 +154,7 @@
       <button onclick="enterAdmin('faqs')">❓ FAQs</button>
       <button onclick="enterAdmin('settings')">⚙️ Settings</button>
       <button onclick="enterAdmin('quotes')">💬 Quote Requests</button>
+      <button onclick="enterAdmin('orders')">🧾 Orders</button>
       <div class="lt-divider"></div>
       <button onclick="enterAdmin('dashboard')">📊 Full Dashboard</button>
       <button onclick="reloadPreview()">↻ Reload preview</button>
@@ -171,6 +172,7 @@
         <button class="nav-item" onclick="showPage('products')">📦 Products</button>
         <button class="nav-item" onclick="showPage('testimonials')">⭐ Testimonials</button>
         <button class="nav-item" onclick="showPage('faqs')">❓ FAQs</button>
+        <button class="nav-item" onclick="showPage('orders')">🧾 Orders</button>
         <button class="nav-item" onclick="showPage('settings')">⚙️ Settings</button>
       </nav>
       <div class="sidebar-footer">
@@ -264,6 +266,17 @@
           <table class="data-table">
             <thead><tr><th>Question</th><th>Answer</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="faqsTable"><tr><td colspan="4" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Orders -->
+      <div class="page-section" id="page-orders">
+        <div class="page-header"><h1 class="page-title">Orders</h1><button class="btn btn-ghost" onclick="loadOrders()">↻ Refresh</button></div>
+        <div class="card">
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Stripe</th></tr></thead>
+            <tbody id="ordersTable"><tr><td colspan="6" class="loading"><div class="spinner"></div>Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -614,6 +627,7 @@
       }
       if (page === 'testimonials') loadTestimonials();
       if (page === 'faqs') loadFaqs();
+      if (page === 'orders') loadOrders();
       if (page === 'settings') loadSettings();
     }
 
@@ -1245,6 +1259,62 @@
         const el = document.getElementById(`setting-${s.key}`);
         if (el) el.value = s.value || '';
       });
+    }
+
+    async function loadOrders() {
+      const tbody = document.getElementById('ordersTable');
+      tbody.innerHTML = '<tr><td colspan="6" class="loading"><div class="spinner"></div>Loading...</td></tr>';
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id,created_at,customer_name,customer_email,line_items,amount_total,currency,status,refunded_amount,dispute_status,stripe_session_id,stripe_payment_id')
+        .order('created_at', { ascending: false });
+      if (error) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error loading orders</td></tr>';
+        return;
+      }
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No orders yet</td></tr>';
+        return;
+      }
+      const fmtMoney = (cents, currency) => {
+        const n = (Number(cents || 0) / 100).toFixed(2);
+        const sym = (currency || 'usd').toUpperCase() === 'USD' ? '$' : '';
+        return `${sym}${n} ${currency ? currency.toUpperCase() : ''}`.trim();
+      };
+      const fmtStatus = (o) => {
+        const s = o.status || '';
+        const cls = s === 'paid'                ? 'badge-success'
+                  : s === 'refunded'            ? 'badge-muted'
+                  : s === 'partially_refunded'  ? 'badge-warning'
+                  : s === 'disputed'            ? 'badge-warning'
+                  : s === 'dispute_lost'        ? 'badge-danger'
+                  : 'badge-info';
+        return `<span class="badge ${cls}">${esc(s)}</span>`;
+      };
+      const fmtItems = (items) => {
+        if (!Array.isArray(items)) return '';
+        return items.map(i => `${esc(i.description || 'item')} ×${Number(i.quantity || 1)}`).join('<br>');
+      };
+      const fmtRefund = (o) => {
+        if (!o.refunded_amount) return '';
+        return `<div style="font-size:11px;color:var(--text-muted)">refunded ${fmtMoney(o.refunded_amount, o.currency)}</div>`;
+      };
+      tbody.innerHTML = data.map(o => `
+        <tr>
+          <td>${esc(new Date(o.created_at).toLocaleString())}</td>
+          <td>
+            <div>${esc(o.customer_name || '—')}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${esc(o.customer_email || '')}</div>
+          </td>
+          <td>${fmtItems(o.line_items)}</td>
+          <td>
+            ${fmtMoney(o.amount_total, o.currency)}
+            ${fmtRefund(o)}
+          </td>
+          <td>${fmtStatus(o)}${o.dispute_status ? `<div style="font-size:11px;color:var(--text-muted)">${esc(o.dispute_status)}</div>` : ''}</td>
+          <td>${o.stripe_payment_id ? `<a href="https://dashboard.stripe.com/payments/${esc(o.stripe_payment_id)}" target="_blank" rel="noopener" style="font-size:12px;color:var(--accent)">view ↗</a>` : ''}</td>
+        </tr>
+      `).join('');
     }
 
     async function saveSettings() {
