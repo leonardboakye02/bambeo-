@@ -61,8 +61,10 @@
     .product-price-note{font-size:13px;color:var(--text-dim)}
     .divider{height:1px;background:var(--border)}
     .product-description{color:var(--text-muted);font-size:15px;line-height:1.7}
-    .product-details-list{display:flex;flex-direction:column;gap:10px}
-    .product-details-list li{color:var(--text-muted);font-size:14px;padding-left:16px;position:relative;list-style:none}
+    .product-details-block{margin-top:4px}
+    .details-heading{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:14px}
+    .product-details-list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0}
+    .product-details-list li{color:var(--text-muted);font-size:14px;padding-left:16px;position:relative;list-style:none;line-height:1.5}
     .product-details-list li::before{content:"•";position:absolute;left:0;color:var(--text-dim)}
     .product-status{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.15);border-radius:50px;font-size:13px;color:#4ade80}
     .product-status .dot{width:8px;height:8px;background:#4ade80;border-radius:50%;animation:pulse 2s infinite}
@@ -275,6 +277,18 @@
         ? '<div class="product-description">' + esc(product.description) + '</div>'
         : '';
 
+      var detailsHtml = '';
+      if (product.product_details) {
+        var lines = product.product_details.split('\n').filter(function(l) { return l.trim(); });
+        if (lines.length) {
+          detailsHtml = '<div class="product-details-block">' +
+            '<h3 class="details-heading">Details</h3>' +
+            '<ul class="product-details-list">' +
+            lines.map(function(line) { return '<li>' + esc(line.trim()) + '</li>'; }).join('') +
+            '</ul></div>';
+        }
+      }
+
       // Status badge
       var statusHtml = '<div class="product-status"><span class="dot"></span> In Stock</div>';
 
@@ -323,6 +337,7 @@
               '<div class="divider"></div>' +
               statusHtml +
               descHtml +
+              detailsHtml +
               '<div class="divider"></div>' +
               '<div class="quantity-row">' +
                 '<div class="quantity-control">' +

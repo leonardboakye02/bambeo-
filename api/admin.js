@@ -17,7 +17,7 @@ const ALLOWED_ACTIONS = ['select', 'insert', 'update', 'delete', 'upsert'];
 
 // Per-table column whitelists for filters and select projections
 const ALLOWED_COLUMNS = {
-  products:        ['id', 'name', 'display_text', 'category', 'price', 'color', 'tag', 'description', 'image_url', 'image_urls', 'is_active', 'sort_order', 'created_at', 'updated_at'],
+  products:        ['id', 'name', 'display_text', 'category', 'price', 'color', 'tag', 'description', 'product_details', 'image_url', 'image_urls', 'is_active', 'sort_order', 'created_at', 'updated_at'],
   gallery:         ['id', 'title', 'image_url', 'image_urls', 'description', 'is_active', 'sort_order', 'created_at', 'updated_at'],
   testimonials:    ['id', 'author_name', 'review_text', 'rating', 'is_active', 'sort_order', 'created_at', 'updated_at'],
   faqs:            ['id', 'question', 'answer', 'is_active', 'sort_order', 'created_at', 'updated_at'],
