@@ -1,6 +1,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const crypto = require('crypto');
 const { rateLimit, clientIp } = require('../lib/rate-limit');
+const { captureError, reqContext } = require('../lib/sentry');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -136,6 +137,7 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Stripe error:', error);
+    await captureError(error, reqContext(req, '/api/create-checkout-session'));
     return res.status(500).json({ error: 'Failed to create checkout session' });
   }
 };

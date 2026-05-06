@@ -3,6 +3,7 @@
 // charge.dispute.closed.
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { captureError, reqContext } = require('../lib/sentry');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -164,6 +165,10 @@ module.exports = async (req, res) => {
     return res.status(200).json({ received: true });
   } catch (err) {
     console.error('Webhook handler error:', err);
+    await captureError(err, {
+      ...reqContext(req, '/api/stripe-webhook'),
+      tags: { event_type: event?.type || 'unknown' }
+    });
     // Stripe retries on 500. Only return 500 for transient errors so it can retry.
     return res.status(500).end('Handler error');
   }

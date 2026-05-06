@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { authenticate, verifyPassword } = require('../lib/auth');
 const { rateLimit, clientIp } = require('../lib/rate-limit');
+const { captureError, reqContext } = require('../lib/sentry');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -22,7 +23,7 @@ const ALLOWED_COLUMNS = {
   faqs:            ['id', 'question', 'answer', 'is_active', 'sort_order', 'created_at', 'updated_at'],
   site_settings:   ['id', 'key', 'value', 'created_at', 'updated_at'],
   quote_requests:  ['id', 'name', 'email', 'phone', 'message', 'design_image', 'design_style', 'status', 'created_at', 'updated_at'],
-  orders:          ['id', 'stripe_session_id', 'stripe_payment_id', 'customer_email', 'customer_name', 'amount_total', 'currency', 'status', 'line_items', 'shipping_address', 'billing_address', 'refunded_amount', 'dispute_status', 'created_at', 'updated_at']
+  orders:          ['id', 'stripe_session_id', 'stripe_payment_id', 'customer_email', 'customer_name', 'amount_total', 'currency', 'status', 'line_items', 'shipping_address', 'billing_address', 'refunded_amount', 'dispute_status', 'tracking_number', 'shipping_carrier', 'shipped_at', 'notes', 'created_at', 'updated_at']
 };
 
 // Identifier validation: alphanum + underscore only (PostgREST column names)
@@ -255,6 +256,7 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Admin API error:', error);
+    await captureError(error, reqContext(req, '/api/admin'));
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

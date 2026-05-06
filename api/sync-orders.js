@@ -6,6 +6,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { authenticate } = require('../lib/auth');
 const { rateLimit, clientIp } = require('../lib/rate-limit');
+const { captureError, reqContext } = require('../lib/sentry');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -125,6 +126,7 @@ module.exports = async (req, res) => {
     return res.status(200).json({ scanned, updated, errors, changes });
   } catch (err) {
     console.error('Sync failed:', err);
+    await captureError(err, reqContext(req, '/api/sync-orders'));
     return res.status(500).json({ error: 'Sync failed' });
   }
 };

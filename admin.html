@@ -415,6 +415,17 @@
     </div>
   </div>
 
+  <!-- Order Action Modal -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal" style="max-width:640px">
+      <div class="modal-header"><h3>Order details</h3><button class="btn btn-ghost btn-icon" onclick="closeOrderModal()">✕</button></div>
+      <div class="modal-body" id="orderModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeOrderModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Quote Detail Modal -->
   <div class="modal-overlay" id="quoteModal">
     <div class="modal" style="max-width:600px">
@@ -1339,8 +1350,10 @@
         if (!o.refunded_amount) return '';
         return `<div style="font-size:11px;color:var(--text-muted)">refunded ${fmtMoney(o.refunded_amount, o.currency)}</div>`;
       };
+      window._adminOrders = {};
+      data.forEach(o => { window._adminOrders[o.id] = o; });
       tbody.innerHTML = data.map(o => `
-        <tr>
+        <tr style="cursor:pointer" onclick="openOrderModal('${esc(o.id)}')">
           <td>${esc(new Date(o.created_at).toLocaleString())}</td>
           <td>
             <div>${esc(o.customer_name || '—')}</div>
@@ -1352,9 +1365,134 @@
             ${fmtRefund(o)}
           </td>
           <td>${fmtStatus(o)}${o.dispute_status ? `<div style="font-size:11px;color:var(--text-muted)">${esc(o.dispute_status)}</div>` : ''}</td>
-          <td>${o.stripe_payment_id ? `<a href="https://dashboard.stripe.com/payments/${esc(o.stripe_payment_id)}" target="_blank" rel="noopener" style="font-size:12px;color:var(--accent)">view ↗</a>` : ''}</td>
+          <td onclick="event.stopPropagation()">${o.stripe_payment_id ? `<a href="https://dashboard.stripe.com/payments/${esc(o.stripe_payment_id)}" target="_blank" rel="noopener" style="font-size:12px;color:var(--accent)">view ↗</a>` : ''}</td>
         </tr>
       `).join('');
+    }
+
+    // ========== ORDER ACTION MODAL ==========
+    let currentOrderId = null;
+
+    function openOrderModal(id) {
+      const o = window._adminOrders?.[id];
+      if (!o) return;
+      currentOrderId = id;
+      const body = document.getElementById('orderModalBody');
+      const fmtMoney = (cents, currency) => `$${((Number(cents||0))/100).toFixed(2)} ${(currency||'usd').toUpperCase()}`;
+      const remaining = (o.amount_total || 0) - (o.refunded_amount || 0);
+      body.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+          <div>
+            <div class="quote-detail"><strong>Customer</strong>${esc(o.customer_name || '—')}</div>
+            <div class="quote-detail"><strong>Email</strong>${esc(o.customer_email || '—')}</div>
+            <div class="quote-detail"><strong>Total</strong>${fmtMoney(o.amount_total, o.currency)}</div>
+            ${o.refunded_amount ? `<div class="quote-detail"><strong>Refunded</strong>${fmtMoney(o.refunded_amount, o.currency)}</div>` : ''}
+          </div>
+          <div>
+            <div class="quote-detail"><strong>Status</strong>${esc(o.status || '—')}</div>
+            <div class="quote-detail"><strong>Date</strong>${esc(new Date(o.created_at).toLocaleString())}</div>
+            ${o.shipped_at ? `<div class="quote-detail"><strong>Shipped</strong>${esc(new Date(o.shipped_at).toLocaleString())}</div>` : ''}
+            ${o.tracking_number ? `<div class="quote-detail"><strong>Tracking</strong>${esc(o.tracking_number)} ${o.shipping_carrier ? `(${esc(o.shipping_carrier)})` : ''}</div>` : ''}
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">Shipping</div>
+          <div class="form-row">
+            <div class="form-group" style="flex:2"><label class="form-label">Tracking number</label><input type="text" class="form-input" id="orderTracking" value="${esc(o.tracking_number || '')}" placeholder="9405 5118 9876..."></div>
+            <div class="form-group" style="flex:1"><label class="form-label">Carrier</label>
+              <select class="form-input" id="orderCarrier">
+                <option value="">—</option>
+                <option value="usps"  ${o.shipping_carrier==='usps'?'selected':''}>USPS</option>
+                <option value="ups"   ${o.shipping_carrier==='ups'?'selected':''}>UPS</option>
+                <option value="fedex" ${o.shipping_carrier==='fedex'?'selected':''}>FedEx</option>
+                <option value="dhl"   ${o.shipping_carrier==='dhl'?'selected':''}>DHL</option>
+                <option value="other" ${o.shipping_carrier==='other'?'selected':''}>Other</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-success" onclick="orderAction('mark_shipped')">📦 Mark shipped</button>
+            <button class="btn btn-ghost" onclick="orderAction('set_tracking')">Save tracking</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">Notes (admin-only)</div>
+          <textarea class="form-input" id="orderNotes" rows="2" placeholder="Internal notes...">${esc(o.notes || '')}</textarea>
+          <button class="btn btn-ghost" style="margin-top:8px" onclick="orderAction('update_notes')">Save notes</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Refund / Cancel</div>
+          ${remaining > 0 ? `
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Refund amount (USD)</label><input type="number" step="0.01" min="0.01" max="${(remaining/100).toFixed(2)}" class="form-input" id="orderRefundAmount" placeholder="${(remaining/100).toFixed(2)}"></div>
+              <div class="form-group"><label class="form-label">Reason</label>
+                <select class="form-input" id="orderRefundReason">
+                  <option value="">—</option>
+                  <option value="requested_by_customer">Requested by customer</option>
+                  <option value="duplicate">Duplicate</option>
+                  <option value="fraudulent">Fraudulent</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-warning" onclick="orderAction('refund')">💸 Issue refund</button>
+              <button class="btn btn-danger" onclick="confirmCancelOrder()">✕ Cancel order</button>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:8px">Leave amount blank to refund the full remaining balance ($${(remaining/100).toFixed(2)}).</div>
+          ` : `<div class="empty-state" style="padding:16px">Fully refunded — no further action available.</div>`}
+        </div>
+      `;
+      document.getElementById('orderModal').classList.add('open');
+    }
+
+    function closeOrderModal() {
+      document.getElementById('orderModal').classList.remove('open');
+      currentOrderId = null;
+    }
+
+    function confirmCancelOrder() {
+      if (!confirm('Cancel this order? This does not refund — use the Refund button for that. Cancellation only flips the status.')) return;
+      orderAction('cancel');
+    }
+
+    async function orderAction(action) {
+      if (!currentOrderId) return;
+      const payload = {};
+      if (action === 'mark_shipped' || action === 'set_tracking') {
+        payload.tracking_number = document.getElementById('orderTracking')?.value || '';
+        payload.carrier = document.getElementById('orderCarrier')?.value || '';
+      } else if (action === 'update_notes') {
+        payload.notes = document.getElementById('orderNotes')?.value || '';
+      } else if (action === 'refund') {
+        const dollars = parseFloat(document.getElementById('orderRefundAmount')?.value || '');
+        if (Number.isFinite(dollars) && dollars > 0) payload.amount = Math.round(dollars * 100);
+        payload.reason = document.getElementById('orderRefundReason')?.value || '';
+        const ok = confirm(payload.amount
+          ? `Refund $${dollars.toFixed(2)}? This is a real Stripe refund.`
+          : 'Refund the full remaining balance? This is a real Stripe refund.');
+        if (!ok) return;
+      }
+      try {
+        const res = await fetch('/api/order-action', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: currentOrderId, action, payload })
+        });
+        const j = await res.json();
+        if (!res.ok) {
+          showToast(j.error || 'Action failed', 'error');
+          return;
+        }
+        showToast('Updated');
+        closeOrderModal();
+        await loadOrders();
+      } catch (e) {
+        showToast('Network error', 'error');
+      }
     }
 
     async function saveSettings() {
