@@ -358,6 +358,10 @@
           <textarea class="form-input" id="productDescription" rows="3" placeholder="Short description shown on the product card..."></textarea>
         </div>
         <div class="form-group">
+          <label class="form-label">Product Details <span style="color:var(--text-muted);font-weight:400">(one detail per line, shown as bullet points on product page)</span></label>
+          <textarea class="form-input" id="productDetails" rows="5" placeholder="Dimensions: 11 × 16 × 1 in&#10;Medium: Multi-layer acrylic composite&#10;Mounting: Hidden sawtooth hangers&#10;Available colors: Pink, Blue, Yellow&#10;Status: Limited edition"></textarea>
+        </div>
+        <div class="form-group">
           <label class="form-label">Product Images <span style="color:var(--text-muted);font-weight:400">(first is primary, drag files below or paste URL)</span></label>
           <div id="productImageDropzone" style="border:2px dashed #d1d5db;border-radius:10px;padding:14px;text-align:center;color:var(--text-muted);font-size:13px;cursor:pointer;margin-bottom:8px" ondragover="imgDragOver(event)" ondragleave="imgDragLeave(event)" ondrop="imgDrop(event)" onclick="document.getElementById('productImageFile').click()">
             Drop images here or click to upload · JPG/PNG, max 2MB each
@@ -1011,6 +1015,7 @@
       }
       document.getElementById('productTag').value = p?.tag || '';
       document.getElementById('productDescription').value = p?.description || '';
+      document.getElementById('productDetails').value = p?.product_details || '';
       document.getElementById('productSort').value = p?.sort_order || 0;
       document.getElementById('productActive').value = p?.is_active !== false ? 'true' : 'false';
       document.getElementById('productImageFile').value = '';
@@ -1110,6 +1115,7 @@
         category: cat,
         tag: document.getElementById('productTag').value || null,
         description: document.getElementById('productDescription').value || null,
+        product_details: document.getElementById('productDetails').value || null,
         image_urls: images,
         image_url: images[0] || null,
         sort_order: parseInt(document.getElementById('productSort').value, 10) || 0,
