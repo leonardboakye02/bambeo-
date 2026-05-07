@@ -218,17 +218,17 @@
   </div>
 
   <section class="hero">
-    <div class="badge"><span class="badge-dot"></span>Made to Order</div>
-    <h1>SIGNS &<br><span class="accent">CUSTOM</span> PIECES</h1>
+    <div class="badge"><span class="badge-dot"></span><span id="heroBadge">Made to Order</span></div>
+    <h1 id="heroHeadline">SIGNS &<br><span class="accent">CUSTOM PIECES</span></h1>
     <p id="heroSubtitle">Elevate your space with premium custom signs and unique pieces. Designed for you, crafted with precision.</p>
     <div class="hero-buttons">
-      <a href="#products" class="btn btn-primary">View Collection</a>
-      <a href="#designer" class="btn btn-outline">Design Your Own</a>
+      <a href="#products" class="btn btn-primary" id="heroCta1">View Collection</a>
+      <a href="#designer" class="btn btn-outline" id="heroCta2">Design Your Own</a>
     </div>
     <div class="stats">
-      <div class="stat"><div class="stat-value">500+</div><div class="stat-label">Pieces Made</div></div>
-      <div class="stat"><div class="stat-value">4.9★</div><div class="stat-label">Rating</div></div>
-      <div class="stat"><div class="stat-value">Free</div><div class="stat-label">Shipping</div></div>
+      <div class="stat"><div class="stat-value" id="stat1Value">500+</div><div class="stat-label" id="stat1Label">Pieces Made</div></div>
+      <div class="stat"><div class="stat-value" id="stat2Value">4.9★</div><div class="stat-label" id="stat2Label">Rating</div></div>
+      <div class="stat"><div class="stat-value" id="stat3Value">Free</div><div class="stat-label" id="stat3Label">Shipping</div></div>
     </div>
   </section>
   
@@ -331,16 +331,16 @@
       <div class="about-grid">
         <div class="about-text">
           <div class="section-label">About Us</div>
-          <h2 class="section-title">CRAFTED WITH <span class="accent">PRECISION</span></h2>
+          <h2 class="section-title" id="aboutTitle">CRAFTED WITH <span class="accent">PRECISION</span></h2>
           <p id="aboutText1">We create custom signs and unique pieces designed to transform any space. Each piece is made to order with attention to detail and quality.</p>
           <p id="aboutText2">From illuminated signs to decorative pieces, we bring your vision to life. Whether for your home, business, or event - we've got you covered.</p>
-          <div class="about-features">
+          <div class="about-features" id="aboutFeatures">
             <div class="about-feature"><span class="check">✓</span> Made to Order</div>
             <div class="about-feature"><span class="check">✓</span> Free Shipping</div>
             <div class="about-feature"><span class="check">✓</span> Quality Guaranteed</div>
           </div>
         </div>
-        <div class="service-grid">
+        <div class="service-grid" id="serviceGrid">
           <div class="service-card"><div class="service-icon">💡</div><div class="service-title">LED Signs</div><div class="service-desc">Vibrant illumination</div></div>
           <div class="service-card"><div class="service-icon">🎨</div><div class="service-title">Custom Pieces</div><div class="service-desc">Unique designs</div></div>
           <div class="service-card"><div class="service-icon">🏠</div><div class="service-title">Home Decor</div><div class="service-desc">Stylish accents</div></div>
@@ -354,7 +354,7 @@
   <section style="text-align:center">
     <div class="container">
       <h2 class="section-title">HOW IT WORKS</h2>
-      <div class="process-grid">
+      <div class="process-grid" id="processGrid">
         <div class="process-step"><div class="process-num">01</div><div class="process-title">Design</div><div class="process-desc">Share your idea</div></div>
         <div class="process-step"><div class="process-num">02</div><div class="process-title">Review</div><div class="process-desc">Approve the proof</div></div>
         <div class="process-step"><div class="process-num">03</div><div class="process-title">Create</div><div class="process-desc">We craft it</div></div>
@@ -379,8 +379,8 @@
   
   <section id="contact" class="contact-section">
     <div class="container">
-      <h2 class="section-title">LET'S <span class="accent">CREATE</span></h2>
-      <p style="color:var(--text-dim);font-size:18px">Have a project in mind? Get in touch.</p>
+      <h2 class="section-title" id="contactTitle">LET'S <span class="accent">CREATE</span></h2>
+      <p style="color:var(--text-dim);font-size:18px" id="contactSubtext">Have a project in mind? Get in touch.</p>
       <div class="contact-buttons">
         <button class="btn btn-primary" onclick="openModal()">Get a Quote</button>
         <a href="mailto:hello@bambeo.com" class="btn btn-outline" id="contactEmail">hello@bambeo.com</a>
@@ -397,7 +397,7 @@
         <a href="#contact">Contact</a>
         <a href="#faq">FAQ</a>
       </div>
-      <div class="footer-copy">© 2024 Bambeo. All rights reserved.</div>
+      <div class="footer-copy" id="footerCopy">© 2024 Bambeo. All rights reserved.</div>
     </div>
   </footer>
   
@@ -590,6 +590,10 @@
       }).join('');
     }
 
+    function parseAccentTitle(raw) {
+      return esc(raw).replace(/\*([^*]+)\*/g, '<span class="accent">$1</span>');
+    }
+
     function applySettings(settings) {
       if (!settings) return;
       var s = {};
@@ -597,11 +601,73 @@
       if (s.base_price) BASE_PRICE = parseFloat(s.base_price);
       if (s.price_per_char) PRICE_PER_CHAR = parseFloat(s.price_per_char);
       if (s.price_per_size) PRICE_PER_SIZE = parseFloat(s.price_per_size);
+
+      // Hero
+      if (s.hero_badge) { var el = document.getElementById('heroBadge'); if (el) el.textContent = s.hero_badge; }
+      if (s.hero_line1 || s.hero_line2) {
+        var h = document.getElementById('heroHeadline');
+        if (h) h.innerHTML = esc(s.hero_line1 || 'SIGNS &') + '<br><span class="accent">' + esc(s.hero_line2 || 'CUSTOM PIECES') + '</span>';
+      }
       if (s.hero_subtitle) document.getElementById('heroSubtitle').textContent = s.hero_subtitle;
+      if (s.hero_cta1_text) { var b = document.getElementById('heroCta1'); if (b) { b.textContent = s.hero_cta1_text; if (s.hero_cta1_link) b.href = s.hero_cta1_link; } }
+      if (s.hero_cta2_text) { var b2 = document.getElementById('heroCta2'); if (b2) { b2.textContent = s.hero_cta2_text; if (s.hero_cta2_link) b2.href = s.hero_cta2_link; } }
+
+      // Stats
+      if (s.stat1_value) { var el = document.getElementById('stat1Value'); if (el) el.textContent = s.stat1_value; }
+      if (s.stat1_label) { var el = document.getElementById('stat1Label'); if (el) el.textContent = s.stat1_label; }
+      if (s.stat2_value) { var el = document.getElementById('stat2Value'); if (el) el.textContent = s.stat2_value; }
+      if (s.stat2_label) { var el = document.getElementById('stat2Label'); if (el) el.textContent = s.stat2_label; }
+      if (s.stat3_value) { var el = document.getElementById('stat3Value'); if (el) el.textContent = s.stat3_value; }
+      if (s.stat3_label) { var el = document.getElementById('stat3Label'); if (el) el.textContent = s.stat3_label; }
+
+      // About
+      if (s.about_title) { var el = document.getElementById('aboutTitle'); if (el) el.innerHTML = parseAccentTitle(s.about_title); }
+      if (s.about_text1) { var el = document.getElementById('aboutText1'); if (el) el.textContent = s.about_text1; }
+      if (s.about_text2) { var el = document.getElementById('aboutText2'); if (el) el.textContent = s.about_text2; }
+      if (s.about_features) {
+        var el = document.getElementById('aboutFeatures');
+        if (el) {
+          var lines = s.about_features.split('\n').filter(function(l) { return l.trim(); });
+          el.innerHTML = lines.map(function(l) { return '<div class="about-feature"><span class="check">✓</span> ' + esc(l.trim()) + '</div>'; }).join('');
+        }
+      }
+
+      // Service cards
+      if (s.service_cards) {
+        var el = document.getElementById('serviceGrid');
+        if (el) {
+          var cards = s.service_cards.split('\n').filter(function(l) { return l.trim(); });
+          el.innerHTML = cards.map(function(line) {
+            var parts = line.split('|').map(function(p) { return p.trim(); });
+            return '<div class="service-card"><div class="service-icon">' + esc(parts[0] || '') + '</div><div class="service-title">' + esc(parts[1] || '') + '</div><div class="service-desc">' + esc(parts[2] || '') + '</div></div>';
+          }).join('');
+        }
+      }
+
+      // Process steps
+      if (s.process_steps) {
+        var el = document.getElementById('processGrid');
+        if (el) {
+          var steps = s.process_steps.split('\n').filter(function(l) { return l.trim(); });
+          el.innerHTML = steps.map(function(line, i) {
+            var parts = line.split('|').map(function(p) { return p.trim(); });
+            var num = String(i + 1).length < 2 ? '0' + (i + 1) : String(i + 1);
+            return '<div class="process-step"><div class="process-num">' + num + '</div><div class="process-title">' + esc(parts[0] || '') + '</div><div class="process-desc">' + esc(parts[1] || '') + '</div></div>';
+          }).join('');
+        }
+      }
+
+      // Contact
+      if (s.contact_title) { var el = document.getElementById('contactTitle'); if (el) el.innerHTML = parseAccentTitle(s.contact_title); }
+      if (s.contact_subtext) { var el = document.getElementById('contactSubtext'); if (el) el.textContent = s.contact_subtext; }
       if (s.email) {
         var el = document.getElementById('contactEmail');
         if (el) { el.href = 'mailto:' + s.email; el.textContent = s.email; }
       }
+
+      // Footer
+      if (s.footer_copy) { var el = document.getElementById('footerCopy'); if (el) el.textContent = s.footer_copy; }
+
       updateEstimate();
     }
 

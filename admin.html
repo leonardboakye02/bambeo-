@@ -290,6 +290,7 @@
       <!-- Settings -->
       <div class="page-section" id="page-settings">
         <div class="page-header"><h1 class="page-title">Settings</h1></div>
+
         <div class="card">
           <div class="card-title">Site Settings</div>
           <div class="form-row">
@@ -300,8 +301,73 @@
             <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="setting-email"></div>
             <div class="form-group"><label class="form-label">Instagram</label><input type="text" class="form-input" id="setting-instagram"></div>
           </div>
-          <div class="form-group"><label class="form-label">Hero Subtitle</label><textarea class="form-input" id="setting-hero_subtitle" rows="2"></textarea></div>
         </div>
+
+        <div class="card">
+          <div class="card-title">Hero Section</div>
+          <div class="form-group"><label class="form-label">Badge Text <span style="color:var(--text-muted);font-weight:400">(small text above headline)</span></label><input type="text" class="form-input" id="setting-hero_badge" placeholder="Made to Order"></div>
+          <div class="form-group"><label class="form-label">Headline Line 1</label><input type="text" class="form-input" id="setting-hero_line1" placeholder="SIGNS &"></div>
+          <div class="form-group"><label class="form-label">Headline Line 2 (accent color)</label><input type="text" class="form-input" id="setting-hero_line2" placeholder="CUSTOM PIECES"></div>
+          <div class="form-group"><label class="form-label">Subtitle</label><textarea class="form-input" id="setting-hero_subtitle" rows="2" placeholder="Elevate your space with premium custom signs..."></textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">CTA Button 1 Text</label><input type="text" class="form-input" id="setting-hero_cta1_text" placeholder="View Collection"></div>
+            <div class="form-group"><label class="form-label">CTA Button 1 Link</label><input type="text" class="form-input" id="setting-hero_cta1_link" placeholder="#products"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">CTA Button 2 Text</label><input type="text" class="form-input" id="setting-hero_cta2_text" placeholder="Design Your Own"></div>
+            <div class="form-group"><label class="form-label">CTA Button 2 Link</label><input type="text" class="form-input" id="setting-hero_cta2_link" placeholder="#designer"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Stats Bar <span style="color:var(--text-muted);font-weight:400;font-size:13px">(below hero)</span></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Stat 1 Value</label><input type="text" class="form-input" id="setting-stat1_value" placeholder="500+"></div>
+            <div class="form-group"><label class="form-label">Stat 1 Label</label><input type="text" class="form-input" id="setting-stat1_label" placeholder="Pieces Made"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Stat 2 Value</label><input type="text" class="form-input" id="setting-stat2_value" placeholder="4.9★"></div>
+            <div class="form-group"><label class="form-label">Stat 2 Label</label><input type="text" class="form-input" id="setting-stat2_label" placeholder="Rating"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Stat 3 Value</label><input type="text" class="form-input" id="setting-stat3_value" placeholder="Free"></div>
+            <div class="form-group"><label class="form-label">Stat 3 Label</label><input type="text" class="form-input" id="setting-stat3_label" placeholder="Shipping"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">About Section</div>
+          <div class="form-group"><label class="form-label">Section Title <span style="color:var(--text-muted);font-weight:400">(use * for accent, e.g. CRAFTED WITH *PRECISION*)</span></label><input type="text" class="form-input" id="setting-about_title" placeholder="CRAFTED WITH *PRECISION*"></div>
+          <div class="form-group"><label class="form-label">Paragraph 1</label><textarea class="form-input" id="setting-about_text1" rows="2" placeholder="We create custom signs and unique pieces..."></textarea></div>
+          <div class="form-group"><label class="form-label">Paragraph 2</label><textarea class="form-input" id="setting-about_text2" rows="2" placeholder="From illuminated signs to decorative pieces..."></textarea></div>
+          <div class="form-group"><label class="form-label">Features <span style="color:var(--text-muted);font-weight:400">(one per line)</span></label><textarea class="form-input" id="setting-about_features" rows="3" placeholder="Made to Order&#10;Free Shipping&#10;Quality Guaranteed"></textarea></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Service Cards <span style="color:var(--text-muted);font-weight:400;font-size:13px">(in About section)</span></div>
+          <div class="form-group"><label class="form-label">Cards <span style="color:var(--text-muted);font-weight:400">(one per line: emoji | title | description)</span></label>
+            <textarea class="form-input" id="setting-service_cards" rows="4" placeholder="💡 | LED Signs | Vibrant illumination&#10;🎨 | Custom Pieces | Unique designs&#10;🏠 | Home Decor | Stylish accents&#10;🏢 | Business | Professional signage"></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Process Steps <span style="color:var(--text-muted);font-weight:400;font-size:13px">(How It Works)</span></div>
+          <div class="form-group"><label class="form-label">Steps <span style="color:var(--text-muted);font-weight:400">(one per line: title | description)</span></label>
+            <textarea class="form-input" id="setting-process_steps" rows="4" placeholder="Design | Share your idea&#10;Review | Approve the proof&#10;Create | We craft it&#10;Ship | Free delivery"></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Contact Section</div>
+          <div class="form-group"><label class="form-label">Heading <span style="color:var(--text-muted);font-weight:400">(use * for accent, e.g. LET'S *CREATE*)</span></label><input type="text" class="form-input" id="setting-contact_title" placeholder="LET'S *CREATE*"></div>
+          <div class="form-group"><label class="form-label">Subtext</label><input type="text" class="form-input" id="setting-contact_subtext" placeholder="Have a project in mind? Get in touch."></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Footer</div>
+          <div class="form-group"><label class="form-label">Copyright Text</label><input type="text" class="form-input" id="setting-footer_copy" placeholder="© 2024 Bambeo. All rights reserved."></div>
+        </div>
+
         <div class="card">
           <div class="card-title">Pricing Calculator</div>
           <div class="form-row">
@@ -310,6 +376,7 @@
           </div>
           <div class="form-group" style="max-width:50%"><label class="form-label">Price Per Size Unit ($)</label><input type="number" class="form-input" id="setting-price_per_size" step="0.1"></div>
         </div>
+
         <div class="card">
           <div class="card-title">Security</div>
           <div class="form-group" style="max-width:50%"><label class="form-label">Admin Password</label><input type="password" class="form-input" id="setting-admin_password" autocomplete="off"></div>
@@ -1502,7 +1569,18 @@
     }
 
     async function saveSettings() {
-      const keys = ['site_name', 'tagline', 'email', 'instagram', 'hero_subtitle', 'base_price', 'price_per_char', 'price_per_size', 'admin_password'];
+      const keys = [
+        'site_name', 'tagline', 'email', 'instagram',
+        'hero_badge', 'hero_line1', 'hero_line2', 'hero_subtitle',
+        'hero_cta1_text', 'hero_cta1_link', 'hero_cta2_text', 'hero_cta2_link',
+        'stat1_value', 'stat1_label', 'stat2_value', 'stat2_label', 'stat3_value', 'stat3_label',
+        'about_title', 'about_text1', 'about_text2', 'about_features',
+        'service_cards', 'process_steps',
+        'contact_title', 'contact_subtext',
+        'footer_copy',
+        'base_price', 'price_per_char', 'price_per_size',
+        'admin_password'
+      ];
       const rows = keys.map(key => ({ key, value: document.getElementById(`setting-${key}`)?.value || '' }));
       const { error } = await supabase.from('site_settings').upsert(rows);
       if (error) { showToast('Error saving settings', 'error'); return; }
