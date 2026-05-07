@@ -574,6 +574,11 @@
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       };
+      async function safeJson(res) {
+        const text = await res.text();
+        try { return JSON.parse(text); }
+        catch { return { error: text || `HTTP ${res.status}` }; }
+      }
       supabase = {
         from: (table) => ({
           select: async (cols = '*') => {
@@ -581,14 +586,14 @@
               ...baseOpts,
               body: JSON.stringify({ table, action: 'select', data: { select: cols } })
             });
-            return await res.json();
+            return await safeJson(res);
           },
           insert: async (rows) => {
             const res = await fetch(ADMIN_API, {
               ...baseOpts,
               body: JSON.stringify({ table, action: 'insert', data: { rows } })
             });
-            return await res.json();
+            return await safeJson(res);
           },
           update: (row) => ({
             eq: async (col, val) => {
@@ -596,7 +601,7 @@
                 ...baseOpts,
                 body: JSON.stringify({ table, action: 'update', data: { rows: row }, filters: { [col]: val } })
               });
-              return await res.json();
+              return await safeJson(res);
             }
           }),
           delete: () => ({
@@ -605,7 +610,7 @@
                 ...baseOpts,
                 body: JSON.stringify({ table, action: 'delete', filters: { [col]: val } })
               });
-              return await res.json();
+              return await safeJson(res);
             }
           }),
           upsert: async (rows) => {
@@ -613,7 +618,7 @@
               ...baseOpts,
               body: JSON.stringify({ table, action: 'upsert', data: { rows } })
             });
-            return await res.json();
+            return await safeJson(res);
           }
         })
       };
