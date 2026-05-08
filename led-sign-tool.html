@@ -1,0 +1,2495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Sign Generator - Bambeo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Pacifico&family=Lobster&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Permanent+Marker&family=Russo+One&family=Orbitron:wght@400;500;600;700;800;900&family=Righteous&family=Bangers&family=Passion+One:wght@400;700;900&family=Anton&family=Black+Ops+One&family=Bungee&family=Archivo+Black&family=Alfa+Slab+One&family=Luckiest+Guy&family=Fredoka+One&family=Rubik+Mono+One&family=Graduate&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/js-clipper@1.0.1/clipper.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e; --surface3: #282828;
+            --border: #2a2a2a; --border2: #3a3a3a;
+            --text: #e8e8e8; --text2: #a0a0a0; --text3: #666;
+            --accent: #4a9eff; --accent2: #2d7dd2; --accent-dim: rgba(74,158,255,0.1);
+            --success: #22c55e; --warning: #f59e0b; --danger: #ef4444;
+            --font-head: 'Syne', sans-serif; --font-body: 'Space Grotesk', sans-serif;
+            --radius: 8px; --radius-sm: 4px;
+        }
+        html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); overflow: hidden; }
+        .app { display: grid; grid-template-rows: 48px 1fr 28px; height: 100vh; }
+
+        /* ── Toolbar ─────────────────────────────────── */
+        .toolbar {
+            display: flex; align-items: center; gap: 10px; padding: 0 14px;
+            background: var(--surface); border-bottom: 1px solid var(--border);
+        }
+        .toolbar h1 { font-family: var(--font-head); font-size: 15px; font-weight: 700; white-space: nowrap; }
+        .toolbar h1 span { color: var(--accent); }
+        .toolbar-spacer { flex: 1; }
+        .toolbar-actions { display: flex; gap: 5px; }
+        .btn {
+            padding: 5px 12px; border: 1px solid var(--border2); border-radius: var(--radius);
+            background: var(--surface2); color: var(--text); font-family: var(--font-body);
+            font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center; gap: 4px; white-space: nowrap;
+        }
+        .btn:hover { background: var(--surface3); border-color: var(--text3); }
+        .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--accent2); }
+        .btn-sm { padding: 3px 8px; font-size: 10px; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: rgba(239,68,68,0.15); }
+
+        /* ── Main Layout ──────────────────────────────── */
+        .main { display: grid; grid-template-columns: 360px 1fr; overflow: hidden; }
+
+        /* ── Sidebar ──────────────────────────────────── */
+        .sidebar {
+            background: var(--surface); border-right: 1px solid var(--border);
+            overflow-y: auto; display: flex; flex-direction: column;
+        }
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+        .sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .sidebar-tabs button {
+            flex: 1; padding: 8px 6px; border: none; background: transparent;
+            color: var(--text3); font-family: var(--font-body); font-size: 11px; font-weight: 500;
+            cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s;
+        }
+        .sidebar-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--accent-dim); }
+        .sidebar-tabs button:hover:not(.active) { color: var(--text2); background: var(--surface2); }
+
+        .tab-content { display: none; flex: 1; overflow-y: auto; padding: 10px; }
+        .tab-content.active { display: block; }
+        .tab-content::-webkit-scrollbar { width: 5px; }
+        .tab-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+        /* ── Panels ───────────────────────────────────── */
+        .panel { margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 7px 10px; cursor: pointer; user-select: none; background: var(--surface2);
+        }
+        .panel-header h3 {
+            font-family: var(--font-head); font-size: 10px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.8px; color: var(--text2);
+        }
+        .panel-header .chevron { color: var(--text3); font-size: 10px; transition: transform 0.2s; }
+        .panel-header.collapsed .chevron { transform: rotate(-90deg); }
+        .panel-body { padding: 8px 10px; }
+        .panel-body.collapsed { display: none; }
+        .field { margin-bottom: 8px; }
+        .field:last-child { margin-bottom: 0; }
+        .field label { display: block; font-size: 10px; color: var(--text2); margin-bottom: 2px; font-weight: 500; }
+        .field input[type="text"], .field input[type="number"], .field select, .field textarea {
+            width: 100%; padding: 5px 7px; background: var(--bg); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); color: var(--text); font-family: var(--font-body);
+            font-size: 11px; outline: none;
+        }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+        .field input[type="number"] { width: 65px; }
+        .field-row { display: flex; align-items: center; gap: 5px; }
+        .field-row label { margin-bottom: 0; min-width: 80px; flex-shrink: 0; }
+        .field-row .unit { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+        .field input[type="range"] { width: 100%; accent-color: var(--accent); height: 4px; }
+        .field input[type="file"] { display: none; }
+        .field input[type="checkbox"] { accent-color: var(--accent); }
+        .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .separator { height: 1px; background: var(--border); margin: 8px 0; }
+        .help-text { font-size: 9px; color: var(--text3); margin-top: 3px; line-height: 1.4; }
+        .file-btn {
+            display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px;
+            background: var(--surface2); border: 1px dashed var(--border2); border-radius: var(--radius);
+            color: var(--text2); font-size: 11px; cursor: pointer; width: 100%; justify-content: center;
+        }
+        .file-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+        /* ── Layer list ─────────────────────────────── */
+        .layer-list { display: flex; flex-direction: column; gap: 3px; }
+        .layer-item {
+            display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+            background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+            cursor: pointer; transition: all 0.1s; font-size: 11px;
+        }
+        .layer-item:hover { border-color: var(--border2); }
+        .layer-item.selected { border-color: var(--accent); background: var(--accent-dim); }
+        .layer-item .layer-icon { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; }
+        .layer-item .layer-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .layer-item .layer-actions { display: flex; gap: 2px; }
+        .layer-item .layer-actions button {
+            width: 20px; height: 20px; border: none; background: transparent;
+            color: var(--text3); font-size: 11px; cursor: pointer; border-radius: 3px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .layer-item .layer-actions button:hover { background: var(--surface3); color: var(--text); }
+        .add-layer-bar { display: flex; gap: 3px; margin-top: 6px; }
+        .add-layer-bar .btn { flex: 1; justify-content: center; font-size: 10px; padding: 4px 6px; }
+
+        /* ── Viewport ─────────────────────────────── */
+        .viewport { position: relative; background: #111; overflow: hidden; }
+        .viewport canvas { display: block; width: 100% !important; height: 100% !important; position: relative; z-index: 1; }
+        .viewport-hint {
+            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            font-size: 9px; color: var(--text3); background: rgba(0,0,0,0.6);
+            padding: 2px 10px; border-radius: 10px; pointer-events: none; z-index: 3;
+        }
+        .viewport-controls {
+            position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 2px; z-index: 4;
+        }
+        .viewport-controls button {
+            width: 26px; height: 26px; border: 1px solid var(--border2); border-radius: var(--radius-sm);
+            background: rgba(20,20,20,0.85); color: var(--text2); font-size: 11px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px);
+        }
+        .viewport-controls button:hover { background: var(--surface3); color: var(--text); }
+        .viewport-controls button.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+        .loading-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex;
+            align-items: center; justify-content: center; z-index: 10;
+        }
+        .loading-overlay.hidden { display: none; }
+        .spinner { width: 24px; height: 24px; border: 3px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .debug-canvas-wrap {
+            position: absolute; top: 8px; left: 8px; background: rgba(14,14,14,0.95);
+            border: 1px solid var(--border2); border-radius: var(--radius); overflow: hidden;
+            z-index: 5; max-width: 360px;
+        }
+        .debug-canvas-wrap.hidden { display: none; }
+        .debug-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+        .debug-canvas-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 3px 8px; font-size: 9px; color: var(--text3); background: var(--surface2);
+        }
+        .debug-canvas-header button { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 12px; }
+
+        /* ── Status Bar ─────────────────────────────── */
+        .statusbar {
+            display: flex; align-items: center; justify-content: space-between; padding: 0 14px;
+            background: var(--surface); border-top: 1px solid var(--border); font-size: 10px; color: var(--text3);
+        }
+        .statusbar .dims { color: var(--text2); }
+        .statusbar .warn { color: var(--warning); }
+
+        /* ── Image preview ──────────────────────────── */
+        .preview-canvas-wrap {
+            background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+            overflow: hidden; margin-top: 4px; position: relative;
+        }
+        .preview-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+        .threshold-overlay { position: absolute; top: 3px; right: 3px; font-size: 9px; color: var(--text3); background: rgba(0,0,0,0.7); padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <header class="toolbar">
+        <h1>LED Sign <span>Generator</span></h1>
+        <div class="toolbar-spacer"></div>
+        <div class="toolbar-actions">
+            <button class="btn" id="btnGenerate">Generate</button>
+            <button class="btn" id="btnExportBase" disabled>Base STL</button>
+            <button class="btn" id="btnExportCap" disabled>Cap STL</button>
+            <button class="btn btn-primary" id="btnExportAll" disabled>Export All</button>
+        </div>
+    </header>
+
+    <div class="main">
+        <aside class="sidebar">
+            <div class="sidebar-tabs">
+                <button class="active" data-tab="layers">Layers</button>
+                <button data-tab="params">Parameters</button>
+                <button data-tab="export">Export</button>
+            </div>
+
+            <!-- ═══ LAYERS TAB ═══ -->
+            <div class="tab-content active" id="tabLayers">
+                <div class="layer-list" id="layerList"></div>
+                <div class="add-layer-bar">
+                    <button class="btn btn-sm" id="addTextLayer">+ Text</button>
+                    <button class="btn btn-sm" id="addImageLayer">+ Image</button>
+                    <button class="btn btn-sm" id="addShapeLayer">+ Shape</button>
+                    <button class="btn btn-sm" id="addLineLayer">+ Line</button>
+                </div>
+                <input type="file" id="imageUploadHidden" accept="image/png,image/jpeg,image/svg+xml,.svg" style="display:none" />
+
+                <!-- Layer editor (shown when a layer is selected) -->
+                <div id="layerEditor" style="margin-top:10px;"></div>
+            </div>
+
+            <!-- ═══ PARAMETERS TAB ═══ -->
+            <div class="tab-content" id="tabParams">
+                <!-- Sign Dimensions -->
+                <div class="panel">
+                    <div class="panel-header"><h3>Sign Dimensions</h3><span class="chevron">&#9662;</span></div>
+                    <div class="panel-body">
+                        <div class="param-grid">
+                            <div class="field"><div class="field-row">
+                                <label>Width</label>
+                                <input type="number" id="signWidth" value="200" min="10" max="2000" step="1" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Height</label>
+                                <input type="number" id="signHeight" value="80" min="10" max="2000" step="1" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Base Parameters -->
+                <div class="panel">
+                    <div class="panel-header"><h3>Base Parameters</h3><span class="chevron">&#9662;</span></div>
+                    <div class="panel-body">
+                        <div class="param-grid">
+                            <div class="field"><div class="field-row">
+                                <label>Back Wall</label>
+                                <input type="number" id="backWall" value="1" min="0.2" max="10" step="0.1" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Outer Height</label>
+                                <input type="number" id="outerWallHeight" value="30" min="3" max="100" step="0.5" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Inner Height</label>
+                                <input type="number" id="innerWallHeight" value="20" min="2" max="100" step="0.5" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Outer Offset</label>
+                                <input type="number" id="outerOffset" value="10" min="0.5" max="50" step="0.5" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Inner Offset</label>
+                                <input type="number" id="innerOffset" value="1.2" min="0.2" max="10" step="0.1" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                        </div>
+                        <div class="separator"></div>
+                        <div class="field">
+                            <label>Base Shape</label>
+                            <select id="baseShape">
+                                <option value="auto">Auto (follow letters)</option>
+                                <option value="rectangle">Rectangle</option>
+                                <option value="rounded">Rounded Rectangle</option>
+                                <option value="circle">Circle / Oval</option>
+                                <option value="shield">Shield / Badge</option>
+                                <option value="hexagon">Hexagon</option>
+                            </select>
+                        </div>
+                        <div class="field" id="cornerRadiusField" style="display:none;">
+                            <div class="field-row">
+                                <label>Corner Radius</label>
+                                <input type="number" id="cornerRadius" value="10" min="1" max="100" step="1" />
+                                <span class="unit">mm</span>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="field-row">
+                                <input type="checkbox" id="borderChannel" />
+                                <label style="min-width:0">Border LED channel</label>
+                            </div>
+                        </div>
+                        <div class="help-text">Border channel adds an LED strip channel around the outer edge for edge-lit effects.</div>
+                    </div>
+                </div>
+
+                <!-- Cap / Diffuser -->
+                <div class="panel">
+                    <div class="panel-header"><h3>Cap / Diffuser</h3><span class="chevron">&#9662;</span></div>
+                    <div class="panel-body">
+                        <div class="param-grid">
+                            <div class="field"><div class="field-row">
+                                <label>Cap Offset</label>
+                                <input type="number" id="capOffset" value="1" min="0.1" max="10" step="0.1" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Tolerance</label>
+                                <input type="number" id="tolerance" value="0.1" min="0" max="2" step="0.05" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Wall Thick.</label>
+                                <input type="number" id="capWallThickness" value="0.4" min="0.1" max="5" step="0.1" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Face Thick.</label>
+                                <input type="number" id="faceThickness" value="1.2" min="0.2" max="6" step="0.1" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                        </div>
+                        <div class="help-text">Face thickness controls diffusion. Thinner = brighter, thicker = more uniform glow.</div>
+                    </div>
+                </div>
+
+                <!-- Mounting -->
+                <div class="panel">
+                    <div class="panel-header"><h3>Mounting</h3><span class="chevron">&#9662;</span></div>
+                    <div class="panel-body">
+                        <div class="field">
+                            <div class="field-row">
+                                <input type="checkbox" id="mountingHoles" />
+                                <label style="min-width:0">Add mounting holes</label>
+                            </div>
+                        </div>
+                        <div id="mountingOptions" style="display:none;">
+                            <div class="param-grid">
+                                <div class="field"><div class="field-row">
+                                    <label>Hole Diam.</label>
+                                    <input type="number" id="holeDiameter" value="4" min="1" max="12" step="0.5" />
+                                    <span class="unit">mm</span>
+                                </div></div>
+                                <div class="field"><div class="field-row">
+                                    <label>Count</label>
+                                    <input type="number" id="holeCount" value="2" min="1" max="8" step="1" />
+                                </div></div>
+                                <div class="field"><div class="field-row">
+                                    <label>Edge Offset</label>
+                                    <input type="number" id="holeEdgeOffset" value="5" min="2" max="30" step="1" />
+                                    <span class="unit">mm</span>
+                                </div></div>
+                                <div class="field">
+                                    <label>Position</label>
+                                    <select id="holePosition">
+                                        <option value="top">Top edge</option>
+                                        <option value="top-bottom">Top & bottom</option>
+                                        <option value="sides">Left & right</option>
+                                        <option value="corners">Corners</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LED Strip -->
+                <div class="panel">
+                    <div class="panel-header"><h3>LED Strip</h3><span class="chevron">&#9662;</span></div>
+                    <div class="panel-body">
+                        <div class="param-grid">
+                            <div class="field"><div class="field-row">
+                                <label>Strip Width</label>
+                                <input type="number" id="ledStripWidth" value="10" min="5" max="20" step="0.5" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Wire Hole</label>
+                                <input type="number" id="wireHoleDiam" value="8" min="3" max="15" step="0.5" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                        </div>
+                        <div class="field">
+                            <label>Wire Exit</label>
+                            <select id="wireExit">
+                                <option value="bottom">Bottom center</option>
+                                <option value="bottom-left">Bottom left</option>
+                                <option value="bottom-right">Bottom right</option>
+                                <option value="back">Back (no hole)</option>
+                            </select>
+                        </div>
+                        <div class="separator"></div>
+                        <div class="field">
+                            <div class="field-row">
+                                <input type="checkbox" id="wirePassthrough" checked />
+                                <label style="min-width:0">Wire passthrough holes between letters</label>
+                            </div>
+                        </div>
+                        <div class="field"><div class="field-row">
+                            <label>Pass. Width</label>
+                            <input type="number" id="wirePassWidth" value="5" min="2" max="15" step="0.5" />
+                            <span class="unit">mm</span>
+                        </div></div>
+                        <div class="field"><div class="field-row">
+                            <label>Pass. Height</label>
+                            <input type="number" id="wirePassHeight" value="4" min="2" max="15" step="0.5" />
+                            <span class="unit">mm</span>
+                        </div></div>
+                        <div class="help-text">Passthrough holes cut through inner walls so LED strip wires can connect between letter channels.</div>
+                        <div class="separator"></div>
+                        <div class="field">
+                            <div class="field-row">
+                                <input type="checkbox" id="powerHole" checked />
+                                <label style="min-width:0">Power cable hole (back wall)</label>
+                            </div>
+                        </div>
+                        <div class="field"><div class="field-row">
+                            <label>Power Hole</label>
+                            <input type="number" id="powerHoleDiam" value="10" min="3" max="25" step="0.5" />
+                            <span class="unit">mm</span>
+                        </div></div>
+                        <div class="field">
+                            <label>Power Position</label>
+                            <select id="powerHolePos">
+                                <option value="bottom-center">Bottom center</option>
+                                <option value="bottom-left">Bottom left</option>
+                                <option value="bottom-right">Bottom right</option>
+                                <option value="center">Center</option>
+                            </select>
+                        </div>
+                        <div class="help-text">Hole through the back wall for power supply cable. Position relative to sign bounds.</div>
+                    </div>
+                </div>
+
+                <!-- Print Settings -->
+                <div class="panel">
+                    <div class="panel-header"><h3>Print Settings</h3><span class="chevron">&#9662;</span></div>
+                    <div class="panel-body">
+                        <div class="param-grid">
+                            <div class="field"><div class="field-row">
+                                <label>Bed X</label>
+                                <input type="number" id="bedX" value="256" min="50" max="1000" step="1" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                            <div class="field"><div class="field-row">
+                                <label>Bed Y</label>
+                                <input type="number" id="bedY" value="256" min="50" max="1000" step="1" />
+                                <span class="unit">mm</span>
+                            </div></div>
+                        </div>
+                        <div class="field"><div class="field-row">
+                            <label>Resolution</label>
+                            <input type="number" id="resolution" value="10" min="2" max="20" step="1" />
+                            <span class="unit">px/mm</span>
+                        </div></div>
+                        <div class="help-text">Higher = smoother but slower. 10 px/mm gives professional results.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ EXPORT TAB ═══ -->
+            <div class="tab-content" id="tabExport">
+                <div class="panel">
+                    <div class="panel-header"><h3>Export Options</h3><span class="chevron">&#9662;</span></div>
+                    <div class="panel-body">
+                        <div class="field">
+                            <label>STL Format</label>
+                            <select id="stlFormat">
+                                <option value="binary" selected>Binary (smaller, Bambu Studio compatible)</option>
+                                <option value="ascii">ASCII (human-readable)</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>File Naming</label>
+                            <input type="text" id="exportPrefix" value="" placeholder="auto from text" />
+                        </div>
+                        <div class="field">
+                            <div class="field-row">
+                                <input type="checkbox" id="splitForBed" />
+                                <label style="min-width:0">Auto-split if larger than bed</label>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="field-row">
+                                <input type="checkbox" id="centerOnBed" checked />
+                                <label style="min-width:0">Center on build plate</label>
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <div class="field">
+                            <button class="btn btn-primary" id="btnExportBase2" disabled style="width:100%;justify-content:center;margin-bottom:4px;">Export Base STL</button>
+                            <button class="btn btn-primary" id="btnExportCap2" disabled style="width:100%;justify-content:center;margin-bottom:4px;">Export Cap STL</button>
+                            <button class="btn" id="btnExportAll2" disabled style="width:100%;justify-content:center;">Export Both</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="viewport" id="viewport">
+            <div class="loading-overlay hidden" id="loading"><div class="spinner"></div></div>
+            <div class="debug-canvas-wrap hidden" id="debugWrap">
+                <div class="debug-canvas-header">
+                    <span>2D Path Preview</span>
+                    <button id="closeDebug">&times;</button>
+                </div>
+                <canvas id="debugCanvas" width="360" height="220"></canvas>
+            </div>
+            <div class="viewport-controls">
+                <button id="btnResetView" title="Reset camera">&#8634;</button>
+                <button id="btnToggle2D" title="Toggle 2D preview">2D</button>
+                <button id="btnToggleBase" title="Toggle base" class="active">B</button>
+                <button id="btnToggleCap" title="Toggle cap" class="active">C</button>
+            </div>
+            <div class="viewport-hint">Drag to rotate &bull; Scroll to zoom &bull; Right-drag to pan</div>
+        </div>
+    </div>
+
+    <footer class="statusbar">
+        <span id="status">Ready</span>
+        <span id="dimensions" class="dims"></span>
+    </footer>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+const CLIPPER_SCALE = 10000; // good precision without overflow
+const CLIPPER_ARC_TOLERANCE = 0.08; // very smooth round joins
+const PATH_SIMPLIFY_TOLERANCE = 0.03; // very tight tolerance for maximum detail
+let _useVectorSmoothing = false; // when true, skip Chaikin (vector paths are already smooth)
+
+// ── Font Library ───────────────────────────────────────────────
+const FONT_LIST = [
+    { name: 'Arial Black', category: 'bold' },
+    { name: 'Impact', category: 'bold' },
+    { name: 'Helvetica', category: 'sans' },
+    { name: 'Verdana', category: 'sans' },
+    { name: 'Segoe UI', category: 'sans' },
+    { name: 'Montserrat', category: 'sans' },
+    { name: 'Oswald', category: 'sans' },
+    { name: 'Bebas Neue', category: 'bold' },
+    { name: 'Anton', category: 'bold' },
+    { name: 'Archivo Black', category: 'bold' },
+    { name: 'Alfa Slab One', category: 'bold' },
+    { name: 'Russo One', category: 'bold' },
+    { name: 'Bangers', category: 'display' },
+    { name: 'Passion One', category: 'bold' },
+    { name: 'Black Ops One', category: 'display' },
+    { name: 'Bungee', category: 'display' },
+    { name: 'Luckiest Guy', category: 'display' },
+    { name: 'Permanent Marker', category: 'display' },
+    { name: 'Righteous', category: 'display' },
+    { name: 'Orbitron', category: 'display' },
+    { name: 'Graduate', category: 'display' },
+    { name: 'Rubik Mono One', category: 'display' },
+    { name: 'Fredoka One', category: 'display' },
+    { name: 'Playfair Display', category: 'serif' },
+    { name: 'Georgia', category: 'serif' },
+    { name: 'Pacifico', category: 'script' },
+    { name: 'Lobster', category: 'script' },
+    { name: 'Dancing Script', category: 'script' },
+    { name: 'Great Vibes', category: 'script' },
+    { name: 'Courier New', category: 'mono' },
+    { name: 'Lucida Console', category: 'mono' },
+];
+
+// ── Vector Font System (opentype.js) ─────────────────────────
+// Programmatic font outline extraction — no bitmap tracing needed for text
+const _fontCache = new Map();
+
+// Font name to Fontsource slug mapping
+function fontToSlug(fontFamily) {
+    return fontFamily.toLowerCase().replace(/\s+/g, '-');
+}
+
+async function loadFontData(fontFamily, fontWeight) {
+    const key = `${fontFamily}:${fontWeight}`;
+    if (_fontCache.has(key)) return _fontCache.get(key);
+
+    const slug = fontToSlug(fontFamily);
+    const weight = fontWeight || '400';
+
+    // Try Fontsource CDN first (serves .woff which opentype.js can parse)
+    const fontsourceUrl = `https://cdn.jsdelivr.net/fontsource/fonts/${slug}@latest/latin-${weight}-normal.woff`;
+    try {
+        const resp = await fetch(fontsourceUrl);
+        if (resp.ok) {
+            const buffer = await resp.arrayBuffer();
+            const font = opentype.parse(buffer);
+            _fontCache.set(key, font);
+            return font;
+        }
+    } catch (e) { /* fall through */ }
+
+    // Fallback: try Google Fonts CSS → extract URL → hope for .woff or .ttf
+    try {
+        const cssUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@${weight}`;
+        const cssResp = await fetch(cssUrl);
+        const css = await cssResp.text();
+        const urlMatch = css.match(/url\((https:\/\/fonts\.gstatic\.com[^)]+)\)/);
+        if (urlMatch) {
+            const fontResp = await fetch(urlMatch[1]);
+            const buffer = await fontResp.arrayBuffer();
+            const font = opentype.parse(buffer);
+            _fontCache.set(key, font);
+            return font;
+        }
+    } catch (e) { /* fall through */ }
+
+    throw new Error(`Could not load font: ${fontFamily} weight ${weight}`);
+}
+
+// Adaptive bezier subdivision step estimation
+function cubicSteps(p0x, p0y, c1x, c1y, c2x, c2y, p1x, p1y, scale, flatness) {
+    const d1 = Math.hypot((c1x - p0x) * scale, (c1y - p0y) * scale);
+    const d2 = Math.hypot((c2x - p1x) * scale, (c2y - p1y) * scale);
+    const dev = Math.max(d1, d2);
+    return Math.min(64, Math.max(2, Math.ceil(Math.sqrt(dev / flatness) * 2)));
+}
+function quadSteps(p0x, p0y, cpx, cpy, p1x, p1y, scale, flatness) {
+    const mx = (p0x + p1x) / 2, my = (p0y + p1y) / 2;
+    const dev = Math.hypot((cpx - mx) * scale, (cpy - my) * scale);
+    return Math.min(64, Math.max(2, Math.ceil(Math.sqrt(dev / flatness) * 2)));
+}
+
+// Convert opentype.js path commands to polygon contours (in mm)
+function opentypePathToContours(path, scale, offsetX, offsetY, flatness) {
+    const contours = [];
+    let current = [];
+    let cx = 0, cy = 0;
+
+    for (const cmd of path.commands) {
+        if (cmd.type === 'M') {
+            if (current.length >= 3) contours.push(current);
+            cx = cmd.x; cy = cmd.y;
+            current = [{ x: cx * scale + offsetX, y: -cy * scale + offsetY }];
+        } else if (cmd.type === 'L') {
+            cx = cmd.x; cy = cmd.y;
+            current.push({ x: cx * scale + offsetX, y: -cy * scale + offsetY });
+        } else if (cmd.type === 'Q') {
+            const steps = quadSteps(cx, cy, cmd.x1, cmd.y1, cmd.x, cmd.y, scale, flatness);
+            for (let s = 1; s <= steps; s++) {
+                const t = s / steps, mt = 1 - t;
+                const x = mt*mt*cx + 2*mt*t*cmd.x1 + t*t*cmd.x;
+                const y = mt*mt*cy + 2*mt*t*cmd.y1 + t*t*cmd.y;
+                current.push({ x: x * scale + offsetX, y: -y * scale + offsetY });
+            }
+            cx = cmd.x; cy = cmd.y;
+        } else if (cmd.type === 'C') {
+            const steps = cubicSteps(cx, cy, cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y, scale, flatness);
+            for (let s = 1; s <= steps; s++) {
+                const t = s / steps, mt = 1 - t;
+                const x = mt*mt*mt*cx + 3*mt*mt*t*cmd.x1 + 3*mt*t*t*cmd.x2 + t*t*t*cmd.x;
+                const y = mt*mt*mt*cy + 3*mt*mt*t*cmd.y1 + 3*mt*t*t*cmd.y2 + t*t*t*cmd.y;
+                current.push({ x: x * scale + offsetX, y: -y * scale + offsetY });
+            }
+            cx = cmd.x; cy = cmd.y;
+        } else if (cmd.type === 'Z') {
+            if (current.length >= 3) contours.push(current);
+            current = [];
+        }
+    }
+    if (current.length >= 3) contours.push(current);
+    return contours;
+}
+
+// Extract vector shapes from a text layer using opentype.js
+async function textLayerToVectorShapes(layer) {
+    const font = await loadFontData(layer.fontFamily, layer.fontWeight);
+    const unitsPerEm = font.unitsPerEm;
+    const scale = layer.fontSize / unitsPerEm; // mm per font unit
+    const flatness = 0.04; // 0.04mm — invisible at FDM resolution
+
+    const lines = layer.text.split('\n').filter(l => l.length > 0);
+    const letterSpacing = layer.letterSpacing || 0;
+    const lineSpacing = layer.lineSpacing || 0;
+
+    // Compute per-line widths for centering
+    const lineMetrics = lines.map(line => {
+        let width = 0;
+        for (let i = 0; i < line.length; i++) {
+            const glyph = font.charToGlyph(line[i]);
+            width += (glyph.advanceWidth || 0) * scale;
+            if (i < line.length - 1) {
+                width += letterSpacing;
+                // Kerning
+                if (font.getKerningValue) {
+                    const nextGlyph = font.charToGlyph(line[i + 1]);
+                    width += font.getKerningValue(glyph, nextGlyph) * scale;
+                }
+            }
+        }
+        return { width, text: line };
+    });
+
+    const totalHeight = lines.length * layer.fontSize + (lines.length - 1) * lineSpacing;
+    const allContours = [];
+    const contourCharLabels = [];
+
+    let lineY = totalHeight / 2 - layer.fontSize / 2;
+
+    for (const lm of lineMetrics) {
+        let x = -lm.width / 2 + layer.x;
+
+        for (let i = 0; i < lm.text.length; i++) {
+            const ch = lm.text[i];
+            const glyph = font.charToGlyph(ch);
+
+            if (ch !== ' ') {
+                const path = glyph.getPath(0, 0, unitsPerEm); // get path in font units
+                const contours = opentypePathToContours(path, scale, x, lineY + layer.y, flatness);
+                for (const c of contours) {
+                    allContours.push(c);
+                    contourCharLabels.push(ch.toUpperCase());
+                }
+            }
+
+            x += (glyph.advanceWidth || 0) * scale + letterSpacing;
+            // Kerning
+            if (i < lm.text.length - 1 && font.getKerningValue) {
+                const nextGlyph = font.charToGlyph(lm.text[i + 1]);
+                x += font.getKerningValue(glyph, nextGlyph) * scale;
+            }
+        }
+
+        lineY -= layer.fontSize + lineSpacing;
+    }
+
+    const shapes = organizeContours(allContours);
+
+    // Derive character labels for each shape from contour X-positions
+    const charLabels = [];
+    for (const s of shapes) {
+        const cx = s.outer.reduce((sum, p) => sum + p.x, 0) / s.outer.length;
+        let bestLabel = '?', bestDist = Infinity;
+        for (let i = 0; i < allContours.length; i++) {
+            const cc = allContours[i].reduce((sum, p) => sum + p.x, 0) / allContours[i].length;
+            const dist = Math.abs(cc - cx);
+            if (dist < bestDist) { bestDist = dist; bestLabel = contourCharLabels[i]; }
+        }
+        charLabels.push(bestLabel);
+    }
+
+    return { shapes, charLabels };
+}
+
+// ── Marching Squares ─────────────────────────────────────────
+class MarchingSquares {
+    static trace(data, w, h, thr) {
+        const get = (x, y) => (x < 0 || x >= w || y < 0 || y >= h) ? 0 : (data[y * w + x] >= thr ? 1 : 0);
+        const lerp = (a, b) => { const d = b - a; return Math.abs(d) < 0.001 ? 0.5 : Math.max(0, Math.min(1, (thr - a) / d)); };
+        const val = (x, y) => (x < 0 || x >= w || y < 0 || y >= h) ? 0 : data[y * w + x];
+        const segs = [];
+        for (let y = 0; y < h - 1; y++) {
+            for (let x = 0; x < w - 1; x++) {
+                const tl = get(x, y), tr = get(x+1, y), br = get(x+1, y+1), bl = get(x, y+1);
+                const ci = (tl << 3) | (tr << 2) | (br << 1) | bl;
+                if (ci === 0 || ci === 15) continue;
+                const vtl = val(x,y), vtr = val(x+1,y), vbl = val(x,y+1), vbr = val(x+1,y+1);
+                const top = { x: x + lerp(vtl, vtr), y };
+                const right = { x: x + 1, y: y + lerp(vtr, vbr) };
+                const bottom = { x: x + lerp(vbl, vbr), y: y + 1 };
+                const left = { x, y: y + lerp(vtl, vbl) };
+                const add = (a, b) => segs.push([a, b]);
+                switch (ci) {
+                    case 1: add(left, bottom); break;
+                    case 2: add(bottom, right); break;
+                    case 3: add(left, right); break;
+                    case 4: add(top, right); break;
+                    case 5: { const c = (vtl+vtr+vbl+vbr)/4; if (c >= thr) { add(left, top); add(bottom, right); } else { add(left, bottom); add(top, right); } break; }
+                    case 6: add(top, bottom); break;
+                    case 7: add(left, top); break;
+                    case 8: add(top, left); break;
+                    case 9: add(top, bottom); break;
+                    case 10: { const c = (vtl+vtr+vbl+vbr)/4; if (c >= thr) { add(top, right); add(left, bottom); } else { add(top, left); add(bottom, right); } break; }
+                    case 11: add(top, right); break;
+                    case 12: add(left, right); break;
+                    case 13: add(bottom, right); break;
+                    case 14: add(left, bottom); break;
+                }
+            }
+        }
+        return this._chain(segs);
+    }
+    static _chain(segs) {
+        if (!segs.length) return [];
+        const key = p => `${p.x.toFixed(4)},${p.y.toFixed(4)}`;
+        const adj = new Map();
+        for (let i = 0; i < segs.length; i++) {
+            const [a, b] = segs[i];
+            const ka = key(a), kb = key(b);
+            if (!adj.has(ka)) adj.set(ka, []);
+            if (!adj.has(kb)) adj.set(kb, []);
+            adj.get(ka).push({ to: b, toKey: kb, idx: i });
+            adj.get(kb).push({ to: a, toKey: ka, idx: i });
+        }
+        const used = new Set();
+        const contours = [];
+        for (let i = 0; i < segs.length; i++) {
+            if (used.has(i)) continue;
+            used.add(i);
+            const c = [segs[i][0], segs[i][1]];
+            let ck = key(segs[i][1]);
+            const sk = key(segs[i][0]);
+            let safe = segs.length + 1;
+            while (ck !== sk && --safe > 0) {
+                const ns = adj.get(ck) || [];
+                let found = false;
+                for (const n of ns) { if (!used.has(n.idx)) { used.add(n.idx); c.push(n.to); ck = n.toKey; found = true; break; } }
+                if (!found) break;
+            }
+            if (c.length >= 4) contours.push(c);
+        }
+        return contours;
+    }
+}
+
+// ── Path Utilities ─────────────────────────────────────────
+function signedArea(p) { let a = 0; for (let i = 0, j = p.length - 1; i < p.length; j = i++) a += (p[j].x - p[i].x) * (p[j].y + p[i].y); return a / 2; }
+
+function pointInPoly(pt, poly) {
+    let ins = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const yi = poly[i].y, yj = poly[j].y;
+        if (((yi > pt.y) !== (yj > pt.y)) && (pt.x < (poly[j].x - poly[i].x) * (pt.y - yi) / (yj - yi) + poly[i].x)) ins = !ins;
+    }
+    return ins;
+}
+
+function simplify(pts, tol) {
+    if (pts.length <= 2) return pts;
+    let mx = 0, mi = 0;
+    const s = pts[0], e = pts[pts.length - 1];
+    for (let i = 1; i < pts.length - 1; i++) {
+        const dx = e.x - s.x, dy = e.y - s.y, len2 = dx*dx + dy*dy;
+        let d;
+        if (len2 === 0) d = Math.hypot(pts[i].x - s.x, pts[i].y - s.y);
+        else { const t = Math.max(0, Math.min(1, ((pts[i].x-s.x)*dx + (pts[i].y-s.y)*dy) / len2)); d = Math.hypot(pts[i].x - (s.x+t*dx), pts[i].y - (s.y+t*dy)); }
+        if (d > mx) { mx = d; mi = i; }
+    }
+    if (mx > tol) { const l = simplify(pts.slice(0, mi+1), tol), r = simplify(pts.slice(mi), tol); return l.slice(0,-1).concat(r); }
+    return [s, e];
+}
+
+// ── Chaikin Curve Smoothing ───────────────────────────────
+// Subdivides a polygon using Chaikin's corner-cutting for smooth, professional curves
+function chaikinSmooth(pts, iterations = 2) {
+    if (pts.length < 3) return pts;
+    let result = pts;
+    for (let iter = 0; iter < iterations; iter++) {
+        const smoothed = [];
+        const n = result.length;
+        for (let i = 0; i < n; i++) {
+            const p0 = result[i];
+            const p1 = result[(i + 1) % n];
+            smoothed.push({ x: 0.75 * p0.x + 0.25 * p1.x, y: 0.75 * p0.y + 0.25 * p1.y });
+            smoothed.push({ x: 0.25 * p0.x + 0.75 * p1.x, y: 0.25 * p0.y + 0.75 * p1.y });
+        }
+        result = smoothed;
+    }
+    return result;
+}
+
+// Reduce point count on smooth sections while preserving sharp features
+function adaptiveSimplify(pts, tolerance) {
+    if (pts.length <= 3) return pts;
+    // First pass: Ramer-Douglas-Peucker
+    const simplified = simplify(pts, tolerance);
+    // If too few points for a good curve, return more
+    if (simplified.length < 6 && pts.length > 10) return simplify(pts, tolerance * 0.4);
+    return simplified;
+}
+
+function organizeContours(contours) {
+    // Filter tiny contours and compute areas
+    const items = [];
+    for (const c of contours) {
+        const a = signedArea(c);
+        if (Math.abs(a) < 0.5) continue;
+        // Ensure consistent CW winding for all contours
+        const pts = a < 0 ? c.slice().reverse() : c;
+        items.push({ pts, area: Math.abs(a) });
+    }
+    // Sort by area descending — largest contours are outers
+    items.sort((a, b) => b.area - a.area);
+
+    // Use containment testing to determine nesting
+    // A contour is a hole if it's contained inside exactly one larger contour (odd nesting depth)
+    const shapes = [];
+    const assigned = new Set();
+
+    for (let i = 0; i < items.length; i++) {
+        if (assigned.has(i)) continue;
+        // Count how many larger contours contain this one
+        let depth = 0;
+        let parentIdx = -1;
+        for (let j = 0; j < i; j++) {
+            if (pointInPoly(items[i].pts[0], items[j].pts)) {
+                depth++;
+                if (depth === 1) parentIdx = j;
+            }
+        }
+
+        if (depth % 2 === 0) {
+            // Even depth = outer shape
+            shapes.push({ outer: items[i].pts, holes: [], _idx: i });
+        } else {
+            // Odd depth = hole of the nearest containing outer
+            // Find the smallest containing outer (the actual parent)
+            let bestShape = null, bestArea = Infinity;
+            for (const s of shapes) {
+                if (pointInPoly(items[i].pts[0], s.outer)) {
+                    const sa = Math.abs(signedArea(s.outer));
+                    if (sa < bestArea) { bestArea = sa; bestShape = s; }
+                }
+            }
+            if (bestShape) {
+                // Holes need CCW winding (reverse of outer)
+                bestShape.holes.push(items[i].pts.slice().reverse());
+            } else {
+                // Fallback: treat as outer
+                shapes.push({ outer: items[i].pts, holes: [], _idx: i });
+            }
+        }
+        assigned.add(i);
+    }
+
+    // Clean up temp data
+    for (const s of shapes) delete s._idx;
+    return shapes;
+}
+
+function pathBounds(shapes) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const s of shapes) for (const p of s.outer) { if (p.x < x0) x0 = p.x; if (p.y < y0) y0 = p.y; if (p.x > x1) x1 = p.x; if (p.y > y1) y1 = p.y; }
+    return { minX: x0, minY: y0, maxX: x1, maxY: y1, width: x1 - x0, height: y1 - y0 };
+}
+
+// ── Clipper.js Wrapper ─────────────────────────────────────
+const CL = window.ClipperLib;
+const toCl = p => p.map(v => ({ X: Math.round(v.x * CLIPPER_SCALE), Y: Math.round(v.y * CLIPPER_SCALE) }));
+const fromCl = p => p.map(v => ({ x: v.X / CLIPPER_SCALE, y: v.Y / CLIPPER_SCALE }));
+
+function clClean(paths, dist = 0.05) {
+    // Remove micro-segments and self-intersections for cleaner geometry
+    return paths.map(p => {
+        const cleaned = CL.JS.Clean(toCl(p), dist * CLIPPER_SCALE);
+        return fromCl(cleaned);
+    }).filter(p => p.length >= 3);
+}
+
+function clOffset(paths, delta) {
+    const co = new CL.ClipperOffset();
+    co.ArcTolerance = CLIPPER_ARC_TOLERANCE * CLIPPER_SCALE; // smooth round curves
+    for (const p of paths) co.AddPath(toCl(p), CL.JoinType.jtRound, CL.EndType.etClosedPolygon);
+    const sol = new CL.Paths();
+    co.Execute(sol, delta * CLIPPER_SCALE);
+    // Clean the result to remove micro-artifacts
+    const cleaned = new CL.Paths();
+    for (const p of sol) {
+        const c = CL.JS.Clean(p, 0.02 * CLIPPER_SCALE);
+        if (c.length >= 3) cleaned.push(c);
+    }
+    return cleaned.map(fromCl);
+}
+
+function clUnion(paths) {
+    const c = new CL.Clipper();
+    for (const p of paths) c.AddPath(toCl(p), CL.PolyType.ptSubject, true);
+    const sol = new CL.Paths();
+    c.Execute(CL.ClipType.ctUnion, sol, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+    return sol.map(fromCl);
+}
+
+function clDiff(subj, clip) {
+    const c = new CL.Clipper();
+    for (const p of subj) c.AddPath(toCl(p), CL.PolyType.ptSubject, true);
+    for (const p of clip) c.AddPath(toCl(p), CL.PolyType.ptClip, true);
+    const sol = new CL.Paths();
+    c.Execute(CL.ClipType.ctDifference, sol, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+    return sol.map(fromCl);
+}
+
+function clIntersect(subj, clip) {
+    const c = new CL.Clipper();
+    for (const p of subj) c.AddPath(toCl(p), CL.PolyType.ptSubject, true);
+    for (const p of clip) c.AddPath(toCl(p), CL.PolyType.ptClip, true);
+    const sol = new CL.Paths();
+    c.Execute(CL.ClipType.ctIntersection, sol, CL.PolyFillType.pftNonZero, CL.PolyFillType.pftNonZero);
+    return sol.map(fromCl);
+}
+
+// ── Shape Generators (for base shapes) ─────────────────────
+function makeRectPath(x, y, w, h) { return [{ x, y }, { x: x+w, y }, { x: x+w, y: y+h }, { x, y: y+h }]; }
+
+function makeRoundedRectPath(x, y, w, h, r) {
+    r = Math.min(r, w/2, h/2);
+    const pts = [], steps = 12;
+    const corner = (cx, cy, startA) => { for (let i = 0; i <= steps; i++) { const a = startA + (Math.PI/2) * i / steps; pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) }); } };
+    corner(x + r, y + r, Math.PI);
+    corner(x + w - r, y + r, -Math.PI/2);
+    corner(x + w - r, y + h - r, 0);
+    corner(x + r, y + h - r, Math.PI/2);
+    return pts;
+}
+
+function makeCirclePath(cx, cy, rx, ry) {
+    const pts = [], steps = 48;
+    for (let i = 0; i < steps; i++) { const a = (i / steps) * Math.PI * 2; pts.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) }); }
+    return pts;
+}
+
+function makeShieldPath(x, y, w, h) {
+    const pts = [], steps = 12;
+    const cx = x + w/2, top = y + h;
+    // Top: rounded rectangle top
+    const r = w * 0.15;
+    pts.push({ x: x + r, y: top });
+    for (let i = 0; i <= steps; i++) { const a = Math.PI/2 + (Math.PI/2) * i / steps; pts.push({ x: x + r + r * Math.cos(a), y: top - r + r * Math.sin(a) }); }
+    // Right side curves down
+    const midY = y + h * 0.35;
+    pts.push({ x: x, y: midY });
+    // Bottom point
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const bx = x + (cx - x) * (1 - t) * (1 - t) * 0 + 2 * (cx - x) * (1 - t) * t * 0.1 + (cx - x) * t * t;
+        const by = midY + (y - midY) * t;
+        pts.push({ x: bx, y: by });
+    }
+    // Mirror for right side
+    for (let i = steps; i >= 0; i--) {
+        const t = i / steps;
+        const bx = cx + (x + w - cx) * t * t + 2 * (x + w - cx) * (1 - t) * t * 0.9;
+        const by = midY + (y - midY) * (1 - t);
+        pts.push({ x: bx, y: by });
+    }
+    pts.push({ x: x + w, y: midY });
+    for (let i = 0; i <= steps; i++) { const a = (Math.PI/2) * i / steps; pts.push({ x: x + w - r + r * Math.cos(a), y: top - r + r * Math.sin(a) }); }
+    return pts;
+}
+
+function makeHexagonPath(cx, cy, rx, ry) {
+    const pts = [];
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2 - Math.PI/6; pts.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) }); }
+    return pts;
+}
+
+function makeLinePath(x1, y1, x2, y2, thickness) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 0.01) return [];
+    const nx = -dy / len * thickness / 2, ny = dx / len * thickness / 2;
+    return [
+        { x: x1 + nx, y: y1 + ny }, { x: x2 + nx, y: y2 + ny },
+        { x: x2 - nx, y: y2 - ny }, { x: x1 - nx, y: y1 - ny }
+    ];
+}
+
+// ── Layer System ──────────────────────────────────────────
+let layerIdCounter = 0;
+
+function createLayer(type, props = {}) {
+    const id = ++layerIdCounter;
+    const base = { id, type, visible: true, x: 0, y: 0, ...props };
+    switch (type) {
+        case 'text':
+            return { ...base, text: props.text || 'TEXT', fontFamily: props.fontFamily || 'Montserrat', fontWeight: props.fontWeight || '900',
+                fontStyle: props.fontStyle || 'normal', fontSize: props.fontSize || 40, letterSpacing: props.letterSpacing ?? 1, lineSpacing: props.lineSpacing ?? 5,
+                align: props.align || 'center' };
+        case 'image':
+            return { ...base, file: null, grayData: null, threshold: 128, invert: false };
+        case 'shape':
+            return { ...base, shapeType: props.shapeType || 'rectangle', width: props.width || 50, height: props.height || 20,
+                cornerRadius: props.cornerRadius || 5, filled: props.filled ?? true, strokeWidth: props.strokeWidth || 2 };
+        case 'line':
+            return { ...base, x2: props.x2 ?? 50, y2: props.y2 ?? 0, thickness: props.thickness || 2 };
+    }
+    return base;
+}
+
+// ── Rasterization per Layer ──────────────────────────────
+function renderLayerToGray(layer, canvasW, canvasH, pxPerMm, signW, signH) {
+    const cw = canvasW, ch = canvasH;
+    const canvas = document.createElement('canvas');
+    canvas.width = cw; canvas.height = ch;
+    const ctx = canvas.getContext('2d');
+
+    // Layer position in mm -> pixels
+    const lx = (layer.x + signW / 2) * pxPerMm;
+    const ly = (signH / 2 - layer.y) * pxPerMm; // flip Y for canvas
+
+    if (layer.type === 'text') {
+        const fontSize = layer.fontSize * pxPerMm;
+        ctx.fillStyle = '#fff';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = layer.align || 'center';
+        const lines = layer.text.split('\n').filter(l => l.length > 0);
+        const lsPx = (layer.lineSpacing || 0) * pxPerMm;
+        const totalH = lines.length * fontSize + (lines.length - 1) * lsPx;
+        const startY = ly - totalH / 2 + fontSize / 2;
+
+        for (let i = 0; i < lines.length; i++) {
+            ctx.font = `${layer.fontStyle} ${layer.fontWeight} ${fontSize}px "${layer.fontFamily}", Arial Black, sans-serif`;
+            try { ctx.letterSpacing = `${(layer.letterSpacing || 0) * pxPerMm}px`; } catch(e) {}
+            const cy = startY + i * (fontSize + lsPx);
+            ctx.fillText(lines[i], lx, cy);
+        }
+    } else if (layer.type === 'shape') {
+        const sw = layer.width * pxPerMm, sh = layer.height * pxPerMm;
+        const sx = lx - sw / 2, sy = ly - sh / 2;
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = (layer.strokeWidth || 2) * pxPerMm;
+
+        if (layer.shapeType === 'rectangle') {
+            if (layer.filled) ctx.fillRect(sx, sy, sw, sh);
+            else ctx.strokeRect(sx, sy, sw, sh);
+        } else if (layer.shapeType === 'rounded-rect') {
+            const r = Math.min((layer.cornerRadius || 5) * pxPerMm, sw/2, sh/2);
+            ctx.beginPath();
+            ctx.roundRect(sx, sy, sw, sh, r);
+            if (layer.filled) ctx.fill(); else ctx.stroke();
+        } else if (layer.shapeType === 'circle') {
+            ctx.beginPath();
+            ctx.ellipse(lx, ly, sw/2, sh/2, 0, 0, Math.PI * 2);
+            if (layer.filled) ctx.fill(); else ctx.stroke();
+        } else if (layer.shapeType === 'hexagon') {
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+                const px = lx + sw/2 * Math.cos(a), py = ly + sh/2 * Math.sin(a);
+                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            if (layer.filled) ctx.fill(); else ctx.stroke();
+        } else if (layer.shapeType === 'star') {
+            ctx.beginPath();
+            for (let i = 0; i < 10; i++) {
+                const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+                const r = i % 2 === 0 ? Math.max(sw, sh) / 2 : Math.max(sw, sh) / 4.5;
+                const px = lx + r * Math.cos(a), py = ly + r * Math.sin(a);
+                if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            if (layer.filled) ctx.fill(); else ctx.stroke();
+        }
+    } else if (layer.type === 'line') {
+        const x1 = lx, y1 = ly;
+        const x2 = (layer.x2 + signW / 2) * pxPerMm;
+        const y2 = (signH / 2 - layer.y2) * pxPerMm;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = layer.thickness * pxPerMm;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    const imgData = ctx.getImageData(0, 0, cw, ch);
+    const gray = new Float32Array(cw * ch);
+    for (let i = 0; i < gray.length; i++) gray[i] = imgData.data[i * 4];
+    return gray;
+}
+
+// Measure the required canvas size for all text layers
+function measureRequiredSize(layers, signW, signH, pxPerMm) {
+    let reqW = signW, reqH = signH;
+    const tempCanvas = document.createElement('canvas');
+    const ctx = tempCanvas.getContext('2d');
+    for (const layer of layers) {
+        if (!layer.visible || layer.type !== 'text') continue;
+        const fontSize = layer.fontSize * pxPerMm;
+        ctx.font = `${layer.fontStyle || 'normal'} ${layer.fontWeight} ${fontSize}px "${layer.fontFamily}", Arial Black, sans-serif`;
+        try { ctx.letterSpacing = `${(layer.letterSpacing || 0) * pxPerMm}px`; } catch(e) {}
+        const lines = layer.text.split('\n').filter(l => l.length > 0);
+        const lsPx = (layer.lineSpacing || 0) * pxPerMm;
+        const totalTextH = lines.length * fontSize + (lines.length - 1) * lsPx;
+        let maxLineW = 0;
+        for (const line of lines) {
+            const m = ctx.measureText(line);
+            maxLineW = Math.max(maxLineW, m.width);
+        }
+        // Convert back to mm and add padding for outer offset
+        const textWmm = maxLineW / pxPerMm + Math.abs(layer.x) * 2 + 30; // 30mm padding for outer walls
+        const textHmm = totalTextH / pxPerMm + Math.abs(layer.y) * 2 + 30;
+        reqW = Math.max(reqW, textWmm);
+        reqH = Math.max(reqH, textHmm);
+    }
+    return { width: reqW, height: reqH };
+}
+
+function compositeLayersToGray(layers, signW, signH, pxPerMm) {
+    // Auto-expand canvas to fit text content
+    const measured = measureRequiredSize(layers, signW, signH, pxPerMm);
+    signW = measured.width;
+    signH = measured.height;
+    const cw = Math.ceil(signW * pxPerMm), ch = Math.ceil(signH * pxPerMm);
+    const composite = new Float32Array(cw * ch);
+
+    for (const layer of layers) {
+        if (!layer.visible) continue;
+
+        let layerGray;
+        if (layer.type === 'image' && layer.grayData) {
+            // Blit image data at layer position
+            layerGray = new Float32Array(cw * ch);
+            const gd = layer.grayData;
+            // Scale image to fit within layer bounds or sign
+            const iw = gd.width, ih = gd.height;
+            const scale = Math.min(cw / iw, ch / ih);
+            const dw = Math.floor(iw * scale), dh = Math.floor(ih * scale);
+            const ox = Math.floor((cw - dw) / 2 + layer.x * pxPerMm);
+            const oy = Math.floor((ch - dh) / 2 - layer.y * pxPerMm);
+            for (let y = 0; y < dh; y++) {
+                for (let x = 0; x < dw; x++) {
+                    const sx = Math.floor(x / scale), sy = Math.floor(y / scale);
+                    const di = (oy + y) * cw + (ox + x);
+                    if (di >= 0 && di < layerGray.length && sx < iw && sy < ih) {
+                        let v = gd.gray[sy * iw + sx];
+                        if (layer.invert) v = 255 - v;
+                        if (v >= layer.threshold) layerGray[di] = 255;
+                    }
+                }
+            }
+        } else {
+            layerGray = renderLayerToGray(layer, cw, ch, pxPerMm, signW, signH);
+        }
+
+        // Composite: max blend
+        for (let i = 0; i < composite.length; i++) {
+            if (layerGray[i] > composite[i]) composite[i] = layerGray[i];
+        }
+    }
+
+    return { gray: composite, width: cw, height: ch, pxPerMm };
+}
+
+function grayToShapes(gray, w, h, thr, pxPerMm) {
+    const contours = MarchingSquares.trace(gray, w, h, thr);
+    const hMm = h / pxPerMm;
+    const mm = contours.map(c => {
+        // Convert to mm coordinates
+        const mmPts = c.map(p => ({ x: p.x / pxPerMm, y: hMm - p.y / pxPerMm }));
+        // Simplify to reduce noise but keep shape detail
+        return adaptiveSimplify(mmPts, PATH_SIMPLIFY_TOLERANCE);
+    }).filter(c => c.length >= 3);
+    return organizeContours(mm);
+}
+
+// Post-smooth simplification: remove colinear/near-colinear points after Chaikin
+// Uses a very tight tolerance to keep smooth curves but remove redundant points
+function postSmoothSimplify(pts, tol = 0.01) {
+    if (pts.length <= 4) return pts;
+    return simplify(pts, tol);
+}
+
+// Apply Chaikin smoothing to all paths in an organized shape set
+// When _useVectorSmoothing is true (vector font input), skip Chaikin — paths are already smooth
+// quality: 'high' (2 iter), 'medium' (2 iter, lighter post-simplify), 'low' (1 iter)
+function smoothShapePaths(shapes, quality = 'high') {
+    if (_useVectorSmoothing) return shapes; // vector font paths: already smooth from bezier flattening
+    const iterations = quality === 'low' ? 1 : 2;
+    const postTol = quality === 'high' ? 0.005 : quality === 'medium' ? 0.01 : 0.02;
+    return shapes.map(s => ({
+        outer: postSmoothSimplify(chaikinSmooth(s.outer, iterations), postTol),
+        holes: s.holes.map(h => postSmoothSimplify(chaikinSmooth(h, iterations), postTol))
+    }));
+}
+
+// Smooth raw Clipper output paths
+function smoothPaths(paths, quality = 'high') {
+    if (_useVectorSmoothing) return paths;
+    const iterations = quality === 'low' ? 1 : 2;
+    const postTol = quality === 'high' ? 0.005 : 0.01;
+    return paths.map(p => postSmoothSimplify(chaikinSmooth(p, iterations), postTol));
+}
+
+// ── Geometry Builders ─────────────────────────────────────
+function shapesToThree(shapes) {
+    const result = [];
+    for (const s of shapes) {
+        if (s.outer.length < 3) continue;
+        const shape = new THREE.Shape();
+        shape.moveTo(s.outer[0].x, s.outer[0].y);
+        for (let i = 1; i < s.outer.length; i++) shape.lineTo(s.outer[i].x, s.outer[i].y);
+        shape.closePath();
+        for (const h of s.holes) {
+            if (h.length < 3) continue;
+            const hole = new THREE.Path();
+            hole.moveTo(h[0].x, h[0].y);
+            for (let i = 1; i < h.length; i++) hole.lineTo(h[i].x, h[i].y);
+            hole.closePath();
+            shape.holes.push(hole);
+        }
+        result.push(shape);
+    }
+    return result;
+}
+
+function getBaseOutline(letterShapes, params) {
+    const allPaths = [];
+    for (const s of letterShapes) { allPaths.push(s.outer); for (const h of s.holes) allPaths.push(h); }
+    if (!allPaths.length) return [];
+
+    let outerPaths = clOffset(allPaths, params.outerOffset);
+    let outerUnion = clUnion(outerPaths);
+
+    if (params.baseShape !== 'auto' && outerUnion.length) {
+        const bounds = pathBounds(organizeContours(outerUnion));
+        const pad = 2;
+        const bx = bounds.minX - pad, by = bounds.minY - pad;
+        const bw = bounds.width + pad * 2, bh = bounds.height + pad * 2;
+        const cx = bx + bw / 2, cy = by + bh / 2;
+
+        switch (params.baseShape) {
+            case 'rectangle':
+                outerUnion = [makeRectPath(bx, by, bw, bh)]; break;
+            case 'rounded':
+                outerUnion = [makeRoundedRectPath(bx, by, bw, bh, params.cornerRadius || 10)]; break;
+            case 'circle':
+                outerUnion = [makeCirclePath(cx, cy, bw / 2, bh / 2)]; break;
+            case 'shield':
+                outerUnion = [makeShieldPath(bx, by, bw, bh)]; break;
+            case 'hexagon':
+                outerUnion = [makeHexagonPath(cx, cy, bw / 2, bh / 2)]; break;
+        }
+    }
+    return outerUnion;
+}
+
+// Create a rectangular slot (wire passthrough) geometry
+function makeSlotGeometry(cx, cy, width, height, depth, zOffset) {
+    const shape = new THREE.Shape();
+    const hw = width / 2, hh = height / 2;
+    const r = Math.min(1, hw, hh); // small corner radius for clean print
+    shape.moveTo(cx - hw + r, cy - hh);
+    shape.lineTo(cx + hw - r, cy - hh);
+    shape.quadraticCurveTo(cx + hw, cy - hh, cx + hw, cy - hh + r);
+    shape.lineTo(cx + hw, cy + hh - r);
+    shape.quadraticCurveTo(cx + hw, cy + hh, cx + hw - r, cy + hh);
+    shape.lineTo(cx - hw + r, cy + hh);
+    shape.quadraticCurveTo(cx - hw, cy + hh, cx - hw, cy + hh - r);
+    shape.lineTo(cx - hw, cy - hh + r);
+    shape.quadraticCurveTo(cx - hw, cy - hh, cx - hw + r, cy - hh);
+    const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+    g.translate(0, 0, zOffset);
+    return g;
+}
+
+// Create a circular hole geometry (for power cable)
+function makeCircleHoleGeometry(cx, cy, diameter, depth, zOffset) {
+    const r = diameter / 2;
+    const segments = 32;
+    const shape = new THREE.Shape();
+    for (let i = 0; i <= segments; i++) {
+        const a = (i / segments) * Math.PI * 2;
+        const px = cx + r * Math.cos(a), py = cy + r * Math.sin(a);
+        if (i === 0) shape.moveTo(px, py); else shape.lineTo(px, py);
+    }
+    const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+    g.translate(0, 0, zOffset);
+    return g;
+}
+
+// Find positions for wire passthrough holes between adjacent letter channels
+function findWirePassPositions(letterShapes, params) {
+    const positions = [];
+    // Get individual letter/shape bounding boxes
+    const shapeBounds = letterShapes.map(s => {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const p of s.outer) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+        return { minX: x0, minY: y0, maxX: x1, maxY: y1, cx: (x0+x1)/2, cy: (y0+y1)/2 };
+    });
+
+    // Sort by X position (left to right)
+    const sorted = shapeBounds.map((b, i) => ({ ...b, idx: i })).sort((a, b) => a.cx - b.cx);
+
+    // For each adjacent pair, place a passthrough hole at the midpoint
+    for (let i = 0; i < sorted.length - 1; i++) {
+        const a = sorted[i], b = sorted[i + 1];
+        // Midpoint between the right edge of A and left edge of B
+        const mx = (a.maxX + b.minX) / 2;
+        // Vertical center: average of both shapes' centers
+        const my = (a.cy + b.cy) / 2;
+        // Only add if shapes are reasonably close horizontally
+        const gap = b.minX - a.maxX;
+        if (gap < params.outerOffset * 3) {
+            positions.push({ x: mx, y: my });
+        }
+    }
+    return positions;
+}
+
+function buildBase(letterShapes, params) {
+    const allPaths = [];
+    for (const s of letterShapes) { allPaths.push(s.outer); for (const h of s.holes) allPaths.push(h); }
+    if (!allPaths.length) return null;
+
+    const outerUnion = getBaseOutline(letterShapes, params);
+    if (!outerUnion.length) return null;
+
+    const innerPaths = clOffset(allPaths, -params.innerOffset);
+    // Selective smoothing: high quality for visible surfaces, low for hidden inner walls
+    const outerShapes = shapesToThree(smoothShapePaths(organizeContours(outerUnion), 'high'));
+    const outerWallPaths = clDiff(outerUnion, allPaths);
+    const outerWallShapes = shapesToThree(smoothShapePaths(organizeContours(outerWallPaths), 'high'));
+    const innerWallPaths = clDiff(allPaths, innerPaths);
+    const innerWallShapes = shapesToThree(smoothShapePaths(organizeContours(innerWallPaths), 'low'));
+
+    const geoms = [];
+
+    // Back plate
+    for (const s of outerShapes) geoms.push(new THREE.ExtrudeGeometry(s, { depth: params.backWall, bevelEnabled: false }));
+    // Outer walls
+    for (const s of outerWallShapes) geoms.push(new THREE.ExtrudeGeometry(s, { depth: params.outerWallHeight, bevelEnabled: false }));
+    // Inner walls (LED channel dividers)
+    for (const s of innerWallShapes) geoms.push(new THREE.ExtrudeGeometry(s, { depth: params.innerWallHeight, bevelEnabled: false }));
+
+    // Border LED channel
+    if (params.borderChannel && outerUnion.length) {
+        const borderInner = clOffset(outerUnion, -params.innerOffset * 2);
+        const borderOuter = outerUnion;
+        const borderChannelPaths = clDiff(borderOuter, borderInner);
+        const borderShapes = shapesToThree(smoothShapePaths(organizeContours(borderChannelPaths), 'medium'));
+        for (const s of borderShapes) geoms.push(new THREE.ExtrudeGeometry(s, { depth: params.innerWallHeight, bevelEnabled: false }));
+    }
+
+    if (!geoms.length) return null;
+
+    // Merge the solid geometry first
+    let baseMerged = BufferGeometryUtils.mergeGeometries(geoms, false);
+    for (const g of geoms) g.dispose();
+    if (!baseMerged) return null;
+
+    // Now subtract holes using CSG-like approach via Three.js
+    // Since we don't have CSG, we'll build the holes as separate negative geometries
+    // and use a visual approach — create the hole cutouts as part of the back plate
+    // For proper boolean subtraction, we rebuild the back plate with holes
+
+    // Wire passthrough holes between letters
+    const holeGeoms = [];
+    if (params.wirePassthrough) {
+        const passPositions = findWirePassPositions(letterShapes, params);
+        for (const pos of passPositions) {
+            // Slot through the full height of inner walls, starting at back wall
+            holeGeoms.push(makeSlotGeometry(
+                pos.x, pos.y,
+                params.wirePassWidth, params.wirePassHeight,
+                params.innerWallHeight, // full inner wall height
+                params.backWall // start above the back plate
+            ));
+        }
+    }
+
+    // Power cable hole through back wall
+    if (params.powerHole) {
+        const bounds = pathBounds(organizeContours(outerUnion));
+        let px, py;
+        switch (params.powerHolePos) {
+            case 'bottom-center':
+                px = (bounds.minX + bounds.maxX) / 2;
+                py = bounds.minY + (bounds.height * 0.15);
+                break;
+            case 'bottom-left':
+                px = bounds.minX + (bounds.width * 0.2);
+                py = bounds.minY + (bounds.height * 0.15);
+                break;
+            case 'bottom-right':
+                px = bounds.maxX - (bounds.width * 0.2);
+                py = bounds.minY + (bounds.height * 0.15);
+                break;
+            case 'center':
+                px = (bounds.minX + bounds.maxX) / 2;
+                py = (bounds.minY + bounds.maxY) / 2;
+                break;
+        }
+        // Hole goes through the back wall
+        holeGeoms.push(makeCircleHoleGeometry(
+            px, py, params.powerHoleDiam,
+            params.backWall + 1, // slightly deeper than back wall for clean cut
+            -0.5 // start slightly behind
+        ));
+    }
+
+    // Since Three.js doesn't have native CSG, we mark hole positions visually
+    // The holes will be rendered as dark insets in the 3D preview
+    // and properly cut in the exported STL via the back-plate rebuild approach
+    if (holeGeoms.length > 0) {
+        // Build a proper back plate with holes using Clipper boolean difference
+        // Then rebuild the geometry
+        const backPlateWithHoles = rebuildBackPlateWithHoles(outerUnion, params, letterShapes);
+        if (backPlateWithHoles) {
+            // Replace baseMerged with version that has holes
+            baseMerged.dispose();
+            const newGeoms = [];
+            // Back plate with holes
+            newGeoms.push(backPlateWithHoles);
+            // Re-add walls
+            const outerWallShapes2 = shapesToThree(smoothShapePaths(organizeContours(outerWallPaths), 'high'));
+            for (const s of outerWallShapes2) newGeoms.push(new THREE.ExtrudeGeometry(s, { depth: params.outerWallHeight, bevelEnabled: false }));
+            // Inner walls with passthrough notches
+            if (params.wirePassthrough) {
+                const passPositions = findWirePassPositions(letterShapes, params);
+                const innerWallWithNotches = buildInnerWallsWithPassthrough(innerWallPaths, passPositions, params);
+                if (innerWallWithNotches) newGeoms.push(innerWallWithNotches);
+            } else {
+                const innerWallShapes2 = shapesToThree(smoothShapePaths(organizeContours(innerWallPaths), 'low'));
+                for (const s of innerWallShapes2) newGeoms.push(new THREE.ExtrudeGeometry(s, { depth: params.innerWallHeight, bevelEnabled: false }));
+            }
+            // Border channel
+            if (params.borderChannel && outerUnion.length) {
+                const borderInner = clOffset(outerUnion, -params.innerOffset * 2);
+                const borderChannelPaths2 = clDiff(outerUnion, borderInner);
+                const borderShapes2 = shapesToThree(smoothShapePaths(organizeContours(borderChannelPaths2), 'medium'));
+                for (const s of borderShapes2) newGeoms.push(new THREE.ExtrudeGeometry(s, { depth: params.innerWallHeight, bevelEnabled: false }));
+            }
+            baseMerged = BufferGeometryUtils.mergeGeometries(newGeoms, false);
+            for (const g of newGeoms) g.dispose();
+        }
+        for (const g of holeGeoms) g.dispose();
+    }
+
+    return baseMerged;
+}
+
+// Rebuild back plate with power hole cut out using Clipper boolean difference
+function rebuildBackPlateWithHoles(outerUnion, params, letterShapes) {
+    let platePaths = outerUnion.slice();
+
+    // Power hole: subtract a circle from the back plate paths
+    if (params.powerHole) {
+        const bounds = pathBounds(organizeContours(outerUnion));
+        let px, py;
+        switch (params.powerHolePos) {
+            case 'bottom-center': px = (bounds.minX + bounds.maxX) / 2; py = bounds.minY + (bounds.height * 0.15); break;
+            case 'bottom-left': px = bounds.minX + (bounds.width * 0.2); py = bounds.minY + (bounds.height * 0.15); break;
+            case 'bottom-right': px = bounds.maxX - (bounds.width * 0.2); py = bounds.minY + (bounds.height * 0.15); break;
+            case 'center': px = (bounds.minX + bounds.maxX) / 2; py = (bounds.minY + bounds.maxY) / 2; break;
+        }
+        const holePath = makeCirclePath(px, py, params.powerHoleDiam / 2, params.powerHoleDiam / 2);
+        platePaths = clDiff(platePaths, [holePath]);
+    }
+
+    const plateShapes = shapesToThree(smoothShapePaths(organizeContours(platePaths), 'high'));
+    if (!plateShapes.length) return null;
+    const geoms = [];
+    for (const s of plateShapes) geoms.push(new THREE.ExtrudeGeometry(s, { depth: params.backWall, bevelEnabled: false }));
+    const merged = BufferGeometryUtils.mergeGeometries(geoms, false);
+    for (const g of geoms) g.dispose();
+    return merged;
+}
+
+// Build inner walls with wire passthrough notches using Clipper
+function buildInnerWallsWithPassthrough(innerWallPaths, passPositions, params) {
+    // Create rectangular cutout paths at each passthrough position
+    let wallPaths = innerWallPaths.slice();
+
+    for (const pos of passPositions) {
+        const hw = params.wirePassWidth / 2;
+        const hh = params.wirePassHeight / 2;
+        const cutout = [
+            { x: pos.x - hw, y: pos.y - hh },
+            { x: pos.x + hw, y: pos.y - hh },
+            { x: pos.x + hw, y: pos.y + hh },
+            { x: pos.x - hw, y: pos.y + hh }
+        ];
+        wallPaths = clDiff(wallPaths, [cutout]);
+    }
+
+    const wallShapes = shapesToThree(smoothShapePaths(organizeContours(wallPaths), 'low'));
+    if (!wallShapes.length) return null;
+    const geoms = [];
+    for (const s of wallShapes) geoms.push(new THREE.ExtrudeGeometry(s, { depth: params.innerWallHeight, bevelEnabled: false }));
+    const merged = BufferGeometryUtils.mergeGeometries(geoms, false);
+    for (const g of geoms) g.dispose();
+    return merged;
+}
+
+// Build a single cap for one shape (letter)
+function buildSingleCap(shape, params) {
+    const paths = [shape.outer, ...shape.holes];
+    const totalInset = params.capOffset + params.tolerance;
+    const capOuter = clOffset(paths, -totalInset);
+    const capInner = clOffset(paths, -(totalInset + params.capWallThickness));
+    if (!capOuter.length) return null;
+
+    const capDepth = params.innerWallHeight;
+    const capFaceShapes = shapesToThree(smoothShapePaths(organizeContours(capOuter), 'high'));
+    const capWallPaths = clDiff(capOuter, capInner);
+    const capWallShapes = shapesToThree(smoothShapePaths(organizeContours(capWallPaths), 'medium'));
+
+    const geoms = [];
+    for (const s of capFaceShapes) {
+        const g = new THREE.ExtrudeGeometry(s, { depth: params.faceThickness, bevelEnabled: false });
+        g.translate(0, 0, capDepth - params.faceThickness);
+        geoms.push(g);
+    }
+    for (const s of capWallShapes) geoms.push(new THREE.ExtrudeGeometry(s, { depth: capDepth - params.faceThickness, bevelEnabled: false }));
+
+    if (!geoms.length) return null;
+    const merged = BufferGeometryUtils.mergeGeometries(geoms, false);
+    for (const g of geoms) g.dispose();
+    return merged;
+}
+
+// Build individual caps for each letter/shape — returns array of { geom, label }
+function buildCaps(letterShapes, params, textLabels) {
+    const caps = [];
+    for (let i = 0; i < letterShapes.length; i++) {
+        const geom = buildSingleCap(letterShapes[i], params);
+        if (geom) {
+            const label = textLabels?.[i] || `shape_${i + 1}`;
+            caps.push({ geom, label });
+        }
+    }
+
+    // Border cap if border channel enabled
+    if (params.borderChannel) {
+        const outerUnion = getBaseOutline(letterShapes, params);
+        if (outerUnion.length) {
+            const totalInset = params.capOffset + params.tolerance;
+            const borderCapOuter = clOffset(outerUnion, -totalInset);
+            if (borderCapOuter.length) {
+                const borderFacePaths = clDiff(borderCapOuter, clOffset(outerUnion, -(params.innerOffset * 2 + totalInset)));
+                const borderFaceShapes = shapesToThree(organizeContours(borderFacePaths));
+                const capDepth = params.innerWallHeight;
+                const geoms = [];
+                for (const s of borderFaceShapes) {
+                    const g = new THREE.ExtrudeGeometry(s, { depth: params.faceThickness, bevelEnabled: false });
+                    g.translate(0, 0, capDepth - params.faceThickness);
+                    geoms.push(g);
+                }
+                if (geoms.length) {
+                    const merged = BufferGeometryUtils.mergeGeometries(geoms, false);
+                    for (const g of geoms) g.dispose();
+                    if (merged) caps.push({ geom: merged, label: 'border' });
+                }
+            }
+        }
+    }
+
+    return caps;
+}
+
+// Build merged cap for 3D preview (all caps combined for visualization)
+function buildCapPreview(caps) {
+    if (!caps.length) return null;
+    if (caps.length === 1) return caps[0].geom.clone();
+    const geoms = caps.map(c => c.geom);
+    const merged = BufferGeometryUtils.mergeGeometries(geoms, false);
+    return merged;
+}
+
+// Get labels for each detected shape by matching to text layer characters
+function getShapeLabels(shapes, layers) {
+    // Try to label shapes by their X position matching text layer characters
+    const textLayer = layers.find(l => l.type === 'text' && l.visible);
+    if (!textLayer) return shapes.map((_, i) => `shape_${i + 1}`);
+
+    const text = textLayer.text.replace(/\s/g, '');
+    // Sort shapes by X center position
+    const sorted = shapes.map((s, i) => {
+        let cx = 0;
+        for (const p of s.outer) cx += p.x;
+        cx /= s.outer.length;
+        return { idx: i, cx };
+    }).sort((a, b) => a.cx - b.cx);
+
+    const labels = new Array(shapes.length).fill('');
+    // Group shapes that are close together (same letter with holes)
+    const groups = [];
+    let currentGroup = [sorted[0]];
+    for (let i = 1; i < sorted.length; i++) {
+        // If this shape overlaps X range with previous, it's part of same letter
+        if (sorted[i].cx - sorted[i - 1].cx < 2) {
+            currentGroup.push(sorted[i]);
+        } else {
+            groups.push(currentGroup);
+            currentGroup = [sorted[i]];
+        }
+    }
+    groups.push(currentGroup);
+
+    // Assign letters to groups
+    let charIdx = 0;
+    for (const group of groups) {
+        const ch = charIdx < text.length ? text[charIdx] : `${charIdx + 1}`;
+        for (const item of group) {
+            labels[item.idx] = ch.toUpperCase();
+        }
+        charIdx++;
+    }
+
+    return labels;
+}
+
+// ── Three.js Scene ───────────────────────────────────────
+class SignScene {
+    constructor(container) {
+        this.container = container;
+        this.baseMesh = null;
+        this.capMesh = null; // combined preview mesh
+        this.capParts = []; // individual cap { geom, label } for export
+
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x111111);
+
+        const w = container.clientWidth, h = container.clientHeight;
+        this.camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 10000);
+        this.camera.position.set(0, -200, 300);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, precision: 'highp' });
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setSize(w, h);
+        container.appendChild(this.renderer.domElement);
+
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.08;
+
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const dl1 = new THREE.DirectionalLight(0xffffff, 0.8); dl1.position.set(150, 200, 200); this.scene.add(dl1);
+        const dl2 = new THREE.DirectionalLight(0xffffff, 0.3); dl2.position.set(-100, 100, -100); this.scene.add(dl2);
+
+        this.grid = new THREE.GridHelper(600, 60, 0x333333, 0x1e1e1e);
+        this.grid.rotation.x = Math.PI / 2;
+        this.scene.add(this.grid);
+
+        this._animate = this._animate.bind(this);
+        this._animate();
+        window.addEventListener('resize', () => this._resize());
+    }
+
+    _animate() { requestAnimationFrame(this._animate); this.controls.update(); this.renderer.render(this.scene, this.camera); }
+    _resize() { const w = this.container.clientWidth, h = this.container.clientHeight; this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setSize(w, h); }
+
+    setBase(geom) {
+        if (this.baseMesh) { this.scene.remove(this.baseMesh); this.baseMesh.geometry.dispose(); }
+        if (!geom) { this.baseMesh = null; return; }
+        this.baseMesh = new THREE.Mesh(geom, new THREE.MeshPhongMaterial({ color: 0x222222, specular: 0x111111, shininess: 20 }));
+        this.scene.add(this.baseMesh);
+    }
+
+    setCaps(caps, outerWallHeight = 30) {
+        // Clean up old preview mesh
+        if (this.capMesh) { this.scene.remove(this.capMesh); this.capMesh.geometry.dispose(); }
+        this.capMesh = null;
+        this.capParts = caps || [];
+        this.capZOffset = outerWallHeight; // caps sit on top of the outer walls
+        if (!caps || !caps.length) return;
+
+        // Build combined preview mesh
+        const previewGeom = buildCapPreview(caps);
+        if (previewGeom) {
+            this.capMesh = new THREE.Mesh(previewGeom, new THREE.MeshPhongMaterial({
+                color: 0xcccccc, specular: 0x444444, shininess: 50, transparent: true, opacity: 0.85
+            }));
+            this.scene.add(this.capMesh);
+        }
+    }
+
+    centerView(bounds) {
+        if (!bounds) return;
+        const cx = (bounds.minX + bounds.maxX) / 2, cy = (bounds.minY + bounds.maxY) / 2;
+        const size = Math.max(bounds.width, bounds.height);
+        if (this.baseMesh) this.baseMesh.position.set(-cx, -cy, 0);
+        // Offset cap above the base so they appear separate
+        if (this.capMesh) this.capMesh.position.set(-cx, -cy, this.capZOffset || 0);
+        const dist = size * 2.2;
+        this.camera.position.set(0, -dist * 0.5, dist * 0.75);
+        this.controls.target.set(0, 0, 20);
+        this.controls.update();
+    }
+
+    resetView() { this.camera.position.set(0, -200, 300); this.controls.target.set(0, 0, 15); this.controls.update(); }
+    toggleBase() { if (this.baseMesh) this.baseMesh.visible = !this.baseMesh.visible; return this.baseMesh?.visible; }
+    toggleCap() { if (this.capMesh) this.capMesh.visible = !this.capMesh.visible; return this.capMesh?.visible; }
+
+    exportSTL(type, binary = true) {
+        const exporter = new STLExporter();
+        const opts = { binary };
+        if (type === 'base' && this.baseMesh) {
+            // Temporarily reset position for export (remove viewport centering offset)
+            const savedPos = this.baseMesh.position.clone();
+            this.baseMesh.position.set(0, 0, 0);
+            const data = exporter.parse(this.baseMesh, opts);
+            this.baseMesh.position.copy(savedPos);
+            return data;
+        }
+        return null;
+    }
+
+    // Export individual cap STLs — returns array of { data, label }
+    // Caps export at Z=0 without viewport centering offset for correct print-bed placement
+    exportCapSTLs(binary = true) {
+        const exporter = new STLExporter();
+        const opts = { binary };
+        const results = [];
+
+        for (const cap of this.capParts) {
+            const mesh = new THREE.Mesh(cap.geom);
+            // Export at origin — geometry already has correct XY positions, Z starts at 0
+            mesh.position.set(0, 0, 0);
+            const data = exporter.parse(mesh, opts);
+            results.push({ data, label: cap.label });
+        }
+        return results;
+    }
+}
+
+// ── 2D Debug Canvas ─────────────────────────────────────
+function drawDebug(canvas, shapes, params) {
+    const ctx = canvas.getContext('2d');
+    const bounds = pathBounds(shapes);
+    if (bounds.width === 0) return;
+    const pad = 14;
+    const scale = Math.min((canvas.width - pad*2) / bounds.width, (canvas.height - pad*2) / bounds.height);
+    const ox = pad + (canvas.width - pad*2 - bounds.width * scale) / 2 - bounds.minX * scale;
+    const oy = pad + (canvas.height - pad*2 - bounds.height * scale) / 2 - bounds.minY * scale;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const draw = (paths, color, lw) => {
+        ctx.strokeStyle = color; ctx.lineWidth = lw;
+        for (const p of paths) { if (p.length < 2) continue; ctx.beginPath(); ctx.moveTo(p[0].x * scale + ox, p[0].y * scale + oy); for (let i = 1; i < p.length; i++) ctx.lineTo(p[i].x * scale + ox, p[i].y * scale + oy); ctx.closePath(); ctx.stroke(); }
+    };
+
+    const allPaths = []; for (const s of shapes) { allPaths.push(s.outer); for (const h of s.holes) allPaths.push(h); }
+    draw(clOffset(allPaths, params.outerOffset), '#2d7dd2', 1.5);
+    draw(allPaths, '#ffffff', 1);
+    draw(clOffset(allPaths, -params.innerOffset), '#ef4444', 1);
+    draw(clOffset(allPaths, -(params.capOffset + params.tolerance)), '#22c55e', 1);
+
+    ctx.font = '9px "Space Grotesk", sans-serif';
+    const legend = [['#2d7dd2','Outer'],['#fff','Letter'],['#ef4444','Inner/LED'],['#22c55e','Cap']];
+    for (let i = 0; i < legend.length; i++) {
+        ctx.fillStyle = legend[i][0]; ctx.fillRect(6, canvas.height - 13 * (legend.length - i), 8, 2);
+        ctx.fillStyle = '#777'; ctx.fillText(legend[i][1], 18, canvas.height - 13 * (legend.length - i) + 4);
+    }
+}
+
+// ── Download Helper ─────────────────────────────────────
+function downloadSTL(data, filename) {
+    const blob = new Blob([data], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ── Layer Editor UI Builder ──────────────────────────────
+function buildLayerEditorHTML(layer) {
+    if (layer.type === 'text') {
+        const fontOptions = FONT_LIST.map(f => `<option value="${f.name}" ${f.name === layer.fontFamily ? 'selected' : ''}>${f.name}</option>`).join('');
+        return `
+        <div class="panel"><div class="panel-header"><h3>Text: "${layer.text.substring(0,15)}"</h3><span class="chevron">&#9662;</span></div>
+        <div class="panel-body">
+            <div class="field"><label>Text (\\n for newlines)</label>
+                <textarea data-prop="text" rows="2" style="width:100%">${layer.text}</textarea></div>
+            <div class="param-grid">
+                <div class="field"><label>Font</label><select data-prop="fontFamily">${fontOptions}</select></div>
+                <div class="field"><label>Weight</label>
+                    <select data-prop="fontWeight">
+                        <option value="400" ${layer.fontWeight==='400'?'selected':''}>Normal</option>
+                        <option value="500" ${layer.fontWeight==='500'?'selected':''}>Medium</option>
+                        <option value="600" ${layer.fontWeight==='600'?'selected':''}>Semi Bold</option>
+                        <option value="700" ${layer.fontWeight==='700'?'selected':''}>Bold</option>
+                        <option value="800" ${layer.fontWeight==='800'?'selected':''}>Extra Bold</option>
+                        <option value="900" ${layer.fontWeight==='900'?'selected':''}>Black</option>
+                    </select></div>
+            </div>
+            <div class="param-grid">
+                <div class="field"><label>Style</label>
+                    <select data-prop="fontStyle">
+                        <option value="normal" ${layer.fontStyle==='normal'?'selected':''}>Normal</option>
+                        <option value="italic" ${layer.fontStyle==='italic'?'selected':''}>Italic</option>
+                    </select></div>
+                <div class="field"><div class="field-row"><label>Size</label>
+                    <input type="number" data-prop="fontSize" data-type="float" value="${layer.fontSize}" min="2" max="200" step="1" />
+                    <span class="unit">mm</span></div></div>
+            </div>
+            <div class="param-grid">
+                <div class="field"><div class="field-row"><label>Letter Sp.</label>
+                    <input type="number" data-prop="letterSpacing" data-type="float" value="${layer.letterSpacing}" min="-10" max="30" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+                <div class="field"><div class="field-row"><label>Line Sp.</label>
+                    <input type="number" data-prop="lineSpacing" data-type="float" value="${layer.lineSpacing}" min="0" max="50" step="1" />
+                    <span class="unit">mm</span></div></div>
+            </div>
+            <div class="param-grid">
+                <div class="field"><div class="field-row"><label>X</label>
+                    <input type="number" data-prop="x" data-type="float" value="${layer.x}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+                <div class="field"><div class="field-row"><label>Y</label>
+                    <input type="number" data-prop="y" data-type="float" value="${layer.y}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+            </div>
+        </div></div>`;
+    }
+    if (layer.type === 'image') {
+        return `
+        <div class="panel"><div class="panel-header"><h3>Image Layer</h3><span class="chevron">&#9662;</span></div>
+        <div class="panel-body">
+            <div class="field"><label class="file-btn" id="imgLayerUploadBtn">${layer.fileName ? 'Change Image (' + layer.fileName + ')' : 'Upload Image (PNG, JPG, SVG)'}</label></div>
+            ${layer.grayData ? `<div class="field" style="font-size:10px;color:var(--success);">&#10003; Image loaded: ${layer.grayData.width}x${layer.grayData.height}px${layer.grayData.hasAlpha ? ' (alpha)' : ' (opaque)'}</div>` : ''}
+            <div class="param-grid">
+                <div class="field"><label>Threshold</label>
+                    <input type="range" data-prop="threshold" data-type="int" min="1" max="254" value="${layer.threshold}" /></div>
+                <div class="field"><div class="field-row">
+                    <input type="checkbox" data-prop="invert" data-type="bool" ${layer.invert?'checked':''} />
+                    <label style="min-width:0">Invert</label>
+                    <span class="unit" id="layerThreshVal">${layer.threshold}</span></div></div>
+            </div>
+            <div class="param-grid">
+                <div class="field"><div class="field-row"><label>X</label>
+                    <input type="number" data-prop="x" data-type="float" value="${layer.x}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+                <div class="field"><div class="field-row"><label>Y</label>
+                    <input type="number" data-prop="y" data-type="float" value="${layer.y}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+            </div>
+        </div></div>`;
+    }
+    if (layer.type === 'shape') {
+        return `
+        <div class="panel"><div class="panel-header"><h3>Shape Layer</h3><span class="chevron">&#9662;</span></div>
+        <div class="panel-body">
+            <div class="field"><label>Shape</label>
+                <select data-prop="shapeType">
+                    <option value="rectangle" ${layer.shapeType==='rectangle'?'selected':''}>Rectangle</option>
+                    <option value="rounded-rect" ${layer.shapeType==='rounded-rect'?'selected':''}>Rounded Rect</option>
+                    <option value="circle" ${layer.shapeType==='circle'?'selected':''}>Circle / Oval</option>
+                    <option value="hexagon" ${layer.shapeType==='hexagon'?'selected':''}>Hexagon</option>
+                    <option value="star" ${layer.shapeType==='star'?'selected':''}>Star</option>
+                </select></div>
+            <div class="param-grid">
+                <div class="field"><div class="field-row"><label>Width</label>
+                    <input type="number" data-prop="width" data-type="float" value="${layer.width}" min="1" max="500" step="1" />
+                    <span class="unit">mm</span></div></div>
+                <div class="field"><div class="field-row"><label>Height</label>
+                    <input type="number" data-prop="height" data-type="float" value="${layer.height}" min="1" max="500" step="1" />
+                    <span class="unit">mm</span></div></div>
+            </div>
+            <div class="param-grid">
+                <div class="field"><div class="field-row">
+                    <input type="checkbox" data-prop="filled" data-type="bool" ${layer.filled?'checked':''} />
+                    <label style="min-width:0">Filled</label></div></div>
+                <div class="field"><div class="field-row"><label>Stroke</label>
+                    <input type="number" data-prop="strokeWidth" data-type="float" value="${layer.strokeWidth}" min="0.5" max="20" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+            </div>
+            <div class="param-grid">
+                <div class="field"><div class="field-row"><label>X</label>
+                    <input type="number" data-prop="x" data-type="float" value="${layer.x}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+                <div class="field"><div class="field-row"><label>Y</label>
+                    <input type="number" data-prop="y" data-type="float" value="${layer.y}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+            </div>
+        </div></div>`;
+    }
+    if (layer.type === 'line') {
+        return `
+        <div class="panel"><div class="panel-header"><h3>Line / Accent</h3><span class="chevron">&#9662;</span></div>
+        <div class="panel-body">
+            <div class="param-grid">
+                <div class="field"><div class="field-row"><label>Start X</label>
+                    <input type="number" data-prop="x" data-type="float" value="${layer.x}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+                <div class="field"><div class="field-row"><label>Start Y</label>
+                    <input type="number" data-prop="y" data-type="float" value="${layer.y}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+            </div>
+            <div class="param-grid">
+                <div class="field"><div class="field-row"><label>End X</label>
+                    <input type="number" data-prop="x2" data-type="float" value="${layer.x2}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+                <div class="field"><div class="field-row"><label>End Y</label>
+                    <input type="number" data-prop="y2" data-type="float" value="${layer.y2}" step="0.5" />
+                    <span class="unit">mm</span></div></div>
+            </div>
+            <div class="field"><div class="field-row"><label>Thickness</label>
+                <input type="number" data-prop="thickness" data-type="float" value="${layer.thickness}" min="0.5" max="20" step="0.5" />
+                <span class="unit">mm</span></div></div>
+        </div></div>`;
+    }
+    return '';
+}
+
+// ── App Controller ───────────────────────────────────────
+class App {
+    constructor() {
+        this.layers = [];
+        this.selectedLayerId = null;
+        this.shapes = null;
+        this.generated = false;
+        this.scene = new SignScene(document.getElementById('viewport'));
+        this._bind();
+        this._updateStatus('Ready — add layers and click Generate');
+
+        // Start with a default text layer
+        this.addLayer('text', { text: 'LIKE', fontSize: 50, fontWeight: '900' });
+    }
+
+    _bind() {
+        // Sidebar tabs
+        document.querySelectorAll('.sidebar-tabs button').forEach(btn => btn.addEventListener('click', () => {
+            document.querySelectorAll('.sidebar-tabs button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            document.getElementById('tab' + btn.dataset.tab.charAt(0).toUpperCase() + btn.dataset.tab.slice(1)).classList.add('active');
+        }));
+
+        // Panel collapse
+        document.addEventListener('click', e => {
+            const ph = e.target.closest('.panel-header');
+            if (ph) {
+                ph.classList.toggle('collapsed');
+                const body = ph.nextElementSibling;
+                if (body) body.classList.toggle('collapsed');
+            }
+        });
+
+        // Base shape toggle
+        document.getElementById('baseShape').addEventListener('change', e => {
+            document.getElementById('cornerRadiusField').style.display = (e.target.value === 'rounded') ? '' : 'none';
+        });
+
+        // Mounting holes toggle
+        document.getElementById('mountingHoles').addEventListener('change', e => {
+            document.getElementById('mountingOptions').style.display = e.target.checked ? '' : 'none';
+        });
+
+        // Add layer buttons
+        document.getElementById('addTextLayer').addEventListener('click', () => this.addLayer('text'));
+        document.getElementById('addImageLayer').addEventListener('click', () => {
+            this._pendingImageLayer = null; // null = create new layer
+            document.getElementById('imageUploadHidden').click();
+        });
+        document.getElementById('imageUploadHidden').addEventListener('change', e => {
+            if (e.target.files[0]) {
+                let layer;
+                if (this._pendingImageLayer) {
+                    // Re-upload to existing layer
+                    layer = this._pendingImageLayer;
+                } else {
+                    // New image layer
+                    layer = this.addLayer('image');
+                }
+                this._loadImageForLayer(layer, e.target.files[0]);
+                e.target.value = '';
+                this._pendingImageLayer = null;
+            }
+        });
+        document.getElementById('addShapeLayer').addEventListener('click', () => this.addLayer('shape'));
+        document.getElementById('addLineLayer').addEventListener('click', () => this.addLayer('line'));
+
+        // Generate
+        document.getElementById('btnGenerate').addEventListener('click', () => this._generate());
+
+        // Export buttons (toolbar)
+        document.getElementById('btnExportBase').addEventListener('click', () => this._export('base'));
+        document.getElementById('btnExportCap').addEventListener('click', () => this._export('cap'));
+        document.getElementById('btnExportAll').addEventListener('click', () => this._exportAll());
+
+        // Export buttons (export tab)
+        document.getElementById('btnExportBase2').addEventListener('click', () => this._export('base'));
+        document.getElementById('btnExportCap2').addEventListener('click', () => this._export('cap'));
+        document.getElementById('btnExportAll2').addEventListener('click', () => this._exportAll());
+
+        // Viewport controls
+        document.getElementById('btnResetView').addEventListener('click', () => this.scene.resetView());
+        document.getElementById('btnToggle2D').addEventListener('click', () => document.getElementById('debugWrap').classList.toggle('hidden'));
+        document.getElementById('btnToggleBase').addEventListener('click', (e) => { const v = this.scene.toggleBase(); e.target.classList.toggle('active', v); });
+        document.getElementById('btnToggleCap').addEventListener('click', (e) => { const v = this.scene.toggleCap(); e.target.classList.toggle('active', v); });
+        document.getElementById('closeDebug').addEventListener('click', () => document.getElementById('debugWrap').classList.add('hidden'));
+    }
+
+    addLayer(type, props = {}) {
+        const layer = createLayer(type, props);
+        this.layers.push(layer);
+        this.selectedLayerId = layer.id;
+        this._renderLayerList();
+        this._renderLayerEditor();
+        return layer;
+    }
+
+    removeLayer(id) {
+        this.layers = this.layers.filter(l => l.id !== id);
+        if (this.selectedLayerId === id) this.selectedLayerId = this.layers[0]?.id || null;
+        this._renderLayerList();
+        this._renderLayerEditor();
+    }
+
+    moveLayer(id, dir) {
+        const idx = this.layers.findIndex(l => l.id === id);
+        if (idx < 0) return;
+        const newIdx = idx + dir;
+        if (newIdx < 0 || newIdx >= this.layers.length) return;
+        [this.layers[idx], this.layers[newIdx]] = [this.layers[newIdx], this.layers[idx]];
+        this._renderLayerList();
+    }
+
+    duplicateLayer(id) {
+        const src = this.layers.find(l => l.id === id);
+        if (!src) return;
+        const copy = { ...src, id: ++layerIdCounter };
+        if (src.type === 'text') copy.text = src.text + ' (copy)';
+        copy.x += 5; copy.y -= 5;
+        this.layers.push(copy);
+        this.selectedLayerId = copy.id;
+        this._renderLayerList();
+        this._renderLayerEditor();
+    }
+
+    _renderLayerList() {
+        const list = document.getElementById('layerList');
+        const icons = { text: 'T', image: '&#128444;', shape: '&#9632;', line: '&#9135;' };
+        list.innerHTML = this.layers.map(l => `
+            <div class="layer-item ${l.id === this.selectedLayerId ? 'selected' : ''}" data-id="${l.id}">
+                <span class="layer-icon">${icons[l.type] || '?'}</span>
+                <span class="layer-name">${l.type === 'text' ? l.text.substring(0,20) : l.type === 'image' && l.fileName ? l.fileName.substring(0,18) : l.type + ' ' + l.id}${l.type === 'image' ? (l.grayData ? ' ✓' : ' (empty)') : ''}</span>
+                <div class="layer-actions">
+                    <button data-action="visibility" title="${l.visible ? 'Hide' : 'Show'}">${l.visible ? '&#128065;' : '&#128064;'}</button>
+                    <button data-action="dup" title="Duplicate">&#128203;</button>
+                    <button data-action="up" title="Move up">&#9650;</button>
+                    <button data-action="down" title="Move down">&#9660;</button>
+                    <button data-action="delete" title="Delete" style="color:var(--danger);">&times;</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Bind layer list events
+        list.querySelectorAll('.layer-item').forEach(item => {
+            item.addEventListener('click', e => {
+                if (e.target.closest('.layer-actions')) return;
+                this.selectedLayerId = parseInt(item.dataset.id);
+                this._renderLayerList();
+                this._renderLayerEditor();
+            });
+        });
+
+        list.querySelectorAll('[data-action]').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const id = parseInt(btn.closest('.layer-item').dataset.id);
+                const action = btn.dataset.action;
+                if (action === 'delete') this.removeLayer(id);
+                else if (action === 'up') this.moveLayer(id, -1);
+                else if (action === 'down') this.moveLayer(id, 1);
+                else if (action === 'dup') this.duplicateLayer(id);
+                else if (action === 'visibility') {
+                    const l = this.layers.find(l => l.id === id);
+                    if (l) { l.visible = !l.visible; this._renderLayerList(); }
+                }
+            });
+        });
+    }
+
+    _renderLayerEditor() {
+        const editor = document.getElementById('layerEditor');
+        const layer = this.layers.find(l => l.id === this.selectedLayerId);
+        if (!layer) { editor.innerHTML = '<div class="help-text" style="padding:10px;text-align:center;">Select a layer to edit its properties</div>'; return; }
+
+        editor.innerHTML = buildLayerEditorHTML(layer);
+
+        // Bind editor inputs
+        editor.querySelectorAll('[data-prop]').forEach(input => {
+            const prop = input.dataset.prop;
+            const type = input.dataset.type || 'string';
+            const handler = () => {
+                if (type === 'bool') layer[prop] = input.checked;
+                else if (type === 'float') layer[prop] = parseFloat(input.value) || 0;
+                else if (type === 'int') layer[prop] = parseInt(input.value) || 0;
+                else layer[prop] = input.value;
+
+                // Update threshold display
+                if (prop === 'threshold') {
+                    const tv = document.getElementById('layerThreshVal');
+                    if (tv) tv.textContent = input.value;
+                }
+                // Update layer list name for text layers
+                if (prop === 'text') this._renderLayerList();
+            };
+            input.addEventListener('input', handler);
+            input.addEventListener('change', handler);
+        });
+
+        // Image upload button for image layer — delegates to unified handler
+        const imgBtn = editor.querySelector('#imgLayerUploadBtn');
+        if (imgBtn) {
+            imgBtn.addEventListener('click', () => {
+                this._pendingImageLayer = layer; // route to existing layer
+                document.getElementById('imageUploadHidden').click();
+            });
+        }
+    }
+
+    async _loadImageForLayer(layer, file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const imgData = ctx.getImageData(0, 0, img.width, img.height);
+                    const gray = new Float32Array(img.width * img.height);
+
+                    // Detect if image uses alpha channel (PNG transparency)
+                    let hasAlpha = false;
+                    let alphaVariance = 0;
+                    for (let i = 0; i < gray.length; i++) {
+                        const a = imgData.data[i * 4 + 3];
+                        if (a < 250) { hasAlpha = true; break; }
+                    }
+
+                    if (hasAlpha) {
+                        // Alpha-based extraction: shape = where pixels are opaque
+                        // Gray value = alpha (opaque=255=white=shape, transparent=0=background)
+                        for (let i = 0; i < gray.length; i++) {
+                            gray[i] = imgData.data[i * 4 + 3]; // use alpha as gray
+                        }
+                        // Auto-set invert=false: shapes are where alpha > threshold
+                    } else {
+                        // Opaque image: use luminance thresholding
+                        // Draw on white background first for consistent results
+                        for (let i = 0; i < gray.length; i++) {
+                            const r = imgData.data[i*4], g = imgData.data[i*4+1], b = imgData.data[i*4+2];
+                            gray[i] = 0.299*r + 0.587*g + 0.114*b;
+                        }
+                        // For opaque images, dark content on light bg is typical
+                        // Auto-invert so dark areas become shapes
+                        layer.invert = true;
+                    }
+
+                    layer.grayData = { gray, width: img.width, height: img.height, hasAlpha };
+                    layer.file = file;
+                    layer.fileName = file.name;
+                    this._renderLayerList();
+                    this._renderLayerEditor();
+                    this._updateStatus(`Image loaded: ${img.width}x${img.height}px` + (hasAlpha ? ' (alpha detected)' : ' (opaque, auto-inverted)'));
+                    resolve();
+                };
+                img.onerror = (err) => {
+                    this._updateStatus('Failed to load image');
+                    reject(err);
+                };
+                img.src = reader.result;
+            };
+            reader.onerror = (err) => {
+                this._updateStatus('Failed to read file');
+                reject(err);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    _val(id) { const el = document.getElementById(id); return el ? parseFloat(el.value) : 0; }
+    _str(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+    _params() {
+        return {
+            signWidth: this._val('signWidth'), signHeight: this._val('signHeight'),
+            backWall: this._val('backWall'), outerWallHeight: this._val('outerWallHeight'),
+            innerWallHeight: this._val('innerWallHeight'), outerOffset: this._val('outerOffset'),
+            innerOffset: this._val('innerOffset'), capOffset: this._val('capOffset'),
+            tolerance: this._val('tolerance'), capWallThickness: this._val('capWallThickness'),
+            faceThickness: this._val('faceThickness'), bedX: this._val('bedX'), bedY: this._val('bedY'),
+            resolution: this._val('resolution'), baseShape: this._str('baseShape'),
+            cornerRadius: this._val('cornerRadius'),
+            borderChannel: document.getElementById('borderChannel')?.checked || false,
+            mountingHoles: document.getElementById('mountingHoles')?.checked || false,
+            holeDiameter: this._val('holeDiameter'), holeCount: this._val('holeCount'),
+            holeEdgeOffset: this._val('holeEdgeOffset'), holePosition: this._str('holePosition'),
+            ledStripWidth: this._val('ledStripWidth'), wireHoleDiam: this._val('wireHoleDiam'),
+            wireExit: this._str('wireExit'),
+            wirePassthrough: document.getElementById('wirePassthrough')?.checked ?? true,
+            wirePassWidth: this._val('wirePassWidth'), wirePassHeight: this._val('wirePassHeight'),
+            powerHole: document.getElementById('powerHole')?.checked ?? true,
+            powerHoleDiam: this._val('powerHoleDiam'), powerHolePos: this._str('powerHolePos'),
+        };
+    }
+
+    _updateStatus(msg, dims) {
+        document.getElementById('status').textContent = msg;
+        const el = document.getElementById('dimensions');
+        if (dims) {
+            el.textContent = dims;
+            const p = this._params();
+            const nums = dims.match(/[\d.]+/g)?.map(Number) || [];
+            el.classList.toggle('warn', nums[0] > p.bedX || nums[1] > p.bedY);
+            if (nums[0] > p.bedX || nums[1] > p.bedY) el.textContent += ' — exceeds bed!';
+        } else { el.textContent = ''; el.classList.remove('warn'); }
+    }
+
+    async _generate() {
+        if (!this.layers.length) { this._updateStatus('Add at least one layer first'); return; }
+        document.getElementById('loading').classList.remove('hidden');
+        this._updateStatus('Generating...');
+        await new Promise(r => setTimeout(r, 30));
+
+        try {
+            const p = this._params();
+
+            // Determine pipeline: vector (Typr.js) for text-only, bitmap for mixed layers
+            const visibleLayers = this.layers.filter(l => l.visible);
+            const textLayers = visibleLayers.filter(l => l.type === 'text');
+            const otherLayers = visibleLayers.filter(l => l.type !== 'text');
+            const useVector = textLayers.length > 0 && typeof opentype !== 'undefined';
+
+            let labels = [];
+
+            if (useVector && otherLayers.length === 0) {
+                // ── Pure vector pipeline: programmatic font outlines ──
+                _useVectorSmoothing = true; // skip Chaikin — vector paths are already smooth
+                this._updateStatus('Loading fonts...');
+                await new Promise(r => setTimeout(r, 10));
+
+                const allShapes = [];
+                const allLabels = [];
+                for (const tl of textLayers) {
+                    try {
+                        const result = await textLayerToVectorShapes(tl);
+                        allShapes.push(...result.shapes);
+                        allLabels.push(...result.charLabels);
+                    } catch (fontErr) {
+                        console.warn('Vector font failed for', tl.fontFamily, '— falling back to bitmap:', fontErr);
+                        // Fallback: render this text layer via bitmap
+                        const bmpResult = compositeLayersToGray([tl], p.signWidth, p.signHeight, p.resolution);
+                        const bmpShapes = grayToShapes(bmpResult.gray, bmpResult.width, bmpResult.height, 128, bmpResult.pxPerMm);
+                        allShapes.push(...bmpShapes);
+                        for (const s of bmpShapes) allLabels.push('?');
+                    }
+                }
+                this.shapes = allShapes;
+                labels = allLabels;
+                this._updateStatus('Building geometry...');
+                await new Promise(r => setTimeout(r, 10));
+
+            } else if (useVector && otherLayers.length > 0) {
+                // ── Mixed pipeline: vector text + bitmap compositing for shapes/images ──
+                _useVectorSmoothing = false; // mixed content needs smoothing for bitmap parts
+                this._updateStatus('Loading fonts...');
+                await new Promise(r => setTimeout(r, 10));
+
+                // Get vector shapes from text layers
+                const vectorShapes = [];
+                const vectorLabels = [];
+                for (const tl of textLayers) {
+                    try {
+                        const result = await textLayerToVectorShapes(tl);
+                        vectorShapes.push(...result.shapes);
+                        vectorLabels.push(...result.charLabels);
+                    } catch (fontErr) {
+                        console.warn('Vector font failed, adding to bitmap pipeline');
+                        otherLayers.push(tl); // fall back to bitmap for this layer
+                    }
+                }
+
+                // Get bitmap shapes from non-text layers
+                if (otherLayers.length > 0) {
+                    const bmpResult = compositeLayersToGray(otherLayers, p.signWidth, p.signHeight, p.resolution);
+                    const bmpShapes = grayToShapes(bmpResult.gray, bmpResult.width, bmpResult.height, 128, bmpResult.pxPerMm);
+                    vectorShapes.push(...bmpShapes);
+                    bmpShapes.forEach((s, i) => vectorLabels.push('img_' + (i + 1)));
+                }
+
+                this.shapes = vectorShapes;
+                labels = vectorLabels;
+                this._updateStatus('Building geometry...');
+                await new Promise(r => setTimeout(r, 10));
+
+            } else {
+                // ── Bitmap pipeline fallback ──
+                _useVectorSmoothing = false; // bitmap tracing needs Chaikin smoothing
+                const result = compositeLayersToGray(this.layers, p.signWidth, p.signHeight, p.resolution);
+                this.shapes = grayToShapes(result.gray, result.width, result.height, 128, result.pxPerMm);
+                labels = getShapeLabels(this.shapes, this.layers);
+            }
+
+            if (!this.shapes.length) {
+                this._updateStatus('No shapes detected — check layers or adjust threshold');
+                document.getElementById('loading').classList.add('hidden');
+                return;
+            }
+
+            const bounds = pathBounds(this.shapes);
+            drawDebug(document.getElementById('debugCanvas'), this.shapes, p);
+            document.getElementById('debugWrap').classList.remove('hidden');
+
+            await new Promise(r => setTimeout(r, 10));
+            const baseGeom = buildBase(this.shapes, p);
+            if (!labels.length) labels = getShapeLabels(this.shapes, this.layers);
+            const caps = buildCaps(this.shapes, p, labels);
+
+            this.scene.setBase(baseGeom);
+            this.scene.setCaps(caps, p.outerWallHeight);
+            this.scene.centerView(bounds);
+
+            this.generated = true;
+            const hasCaps = caps.length > 0;
+            document.getElementById('btnExportBase').disabled = !baseGeom;
+            document.getElementById('btnExportCap').disabled = !hasCaps;
+            document.getElementById('btnExportAll').disabled = !(baseGeom || hasCaps);
+            document.getElementById('btnExportBase2').disabled = !baseGeom;
+            document.getElementById('btnExportCap2').disabled = !hasCaps;
+            document.getElementById('btnExportAll2').disabled = !(baseGeom || hasCaps);
+
+            const totalW = (bounds.width + p.outerOffset * 2).toFixed(1);
+            const totalH = (bounds.height + p.outerOffset * 2).toFixed(1);
+            const bedW = 256, bedH = 256;
+            const exceedsBed = parseFloat(totalW) > bedW || parseFloat(totalH) > bedH;
+            const capInfo = caps.map(c => c.label).join(', ');
+            const sizeNote = exceedsBed ? ` — exceeds bed!` : '';
+            this._updateStatus(`Generated — ${this.shapes.length} shape(s), ${caps.length} cap(s) [${capInfo}]`, `${totalW} x ${totalH} mm${sizeNote}`);
+        } catch (err) {
+            console.error(err);
+            this._updateStatus('Error: ' + err.message);
+        }
+        document.getElementById('loading').classList.add('hidden');
+    }
+
+    _getExportName() {
+        const prefix = this._str('exportPrefix')?.trim();
+        if (prefix) return prefix.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const textLayer = this.layers.find(l => l.type === 'text');
+        if (textLayer) return textLayer.text.split('\n')[0].replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        return 'sign';
+    }
+
+    _export(type) {
+        if (!this.generated) return;
+        const binary = this._str('stlFormat') !== 'ascii';
+        const name = this._getExportName();
+        if (type === 'base') {
+            const data = this.scene.exportSTL('base', binary);
+            if (data) downloadSTL(data, `${name}_base.stl`);
+        } else if (type === 'cap') {
+            // Export each cap as individual STL file (one per letter)
+            const caps = this.scene.exportCapSTLs(binary);
+            for (const cap of caps) {
+                downloadSTL(cap.data, `${cap.label} CAP.stl`);
+            }
+        }
+    }
+
+    _exportAll() {
+        if (!this.generated) return;
+        const binary = this._str('stlFormat') !== 'ascii';
+        const name = this._getExportName();
+        // Base
+        const base = this.scene.exportSTL('base', binary);
+        if (base) downloadSTL(base, `${name}_base.stl`);
+        // Individual caps
+        const caps = this.scene.exportCapSTLs(binary);
+        // Small delay between downloads so browser doesn't block them
+        caps.forEach((cap, i) => {
+            setTimeout(() => downloadSTL(cap.data, `${cap.label} CAP.stl`), i * 200);
+        });
+    }
+}
+
+// Wait for fonts to load before initializing
+document.fonts.ready.then(() => {
+    const app = new App();
+    window._app = app;
+});
+</script>
+</body>
+</html>
